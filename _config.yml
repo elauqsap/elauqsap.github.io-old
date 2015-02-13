@@ -3,11 +3,11 @@
 # ----------------------- #
 
 url: http://elauqsap.github.io
-title: My Octopress Blog
-subtitle: A blogging framework for hackers.
-author: Your Name
+title: thought|pipe
+subtitle: from me to you
+author: elauqsap
 simple_search: https://www.google.com/search
-description:
+description: "Security Engineer with interests in programming, microcontrollers, and lots more. I hope to cover a wide range from security related topics that I am researching to new tools or devices that I find useful. Please feel free to contact me about anything, blog or not blog related."
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
 # You can customize the format as defined in
@@ -64,13 +64,13 @@ default_asides: [asides/recent_posts.html, asides/github.html, asides/delicious.
 # ----------------------- #
 
 # Github repositories
-github_user:
+github_user: elauqsap
 github_repo_count: 0
 github_show_profile_link: true
 github_skip_forks: true
 
 # Twitter
-twitter_user:
+twitter_user: _elauqsap
 twitter_tweet_button: true
 
 # Google +1
@@ -99,3 +99,6 @@ google_analytics_tracking_id:
 
 # Facebook Like
 facebook_like: false
+
+# email
+email: 3lauqsap@gmail.com
