@@ -8,6 +8,8 @@ categories: [Development, VirtualBox, OS X, Tips & Tricks]
 
 I like to keep my development environment separate from my host environment on my personal laptop. A simple solution for keeping them apart is to set up a headless virtual machine with a samba share. I like this method the most because you can set up a lightweight server that can easily load your code base into your favorite IDE or text editor. I will be using VirtualBox in this example but you can use Fusion as well, it just requires a different command.
 
+<!--more-->
+
 #### Prerequisites
  1. Download VirtualBox from [here](https://www.virtualbox.org/wiki/Downloads)
  2. Download Ubuntu Server (14.04 LTS in this example) from [here](http://www.ubuntu.com/download/server)
