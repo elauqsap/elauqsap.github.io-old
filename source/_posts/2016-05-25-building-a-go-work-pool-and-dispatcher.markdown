@@ -11,7 +11,7 @@ I recently started working with [Go](https://golang.org/) which is a very opinio
 <!--more-->
 
 ### Back Story
-My new position at work requires me to work with a large data set that I decided to truncate into smaller sets for processing. I wanted to process each batch in parallel but without restricting myself to a single "job type". So that in the future when the code requires a different "job type" I would not have to wrangle multiple work pools. In developing the solution, I found a work around to Go's lack of generics so I could process multiple "job types" via the same work pool.
+My new position at work requires me to work with a large data set that I decided to truncate into smaller sets for processing. I wanted to process each batch in parallel but without restricting myself to a single "job type". So that in the future when the code requires a different "job type" I would not have to wrangle multiple work pools. In developing the solution, I found a work around to Go's lack of generics so I could process multiple "job types" via the same work pool. This code is modified from a blog post written [here](http://marcio.io/2015/07/handling-1-million-requests-per-minute-with-golang/). I also packaged this code for my reuse [here](https://github.com/elauqsap/workerpool).
 
 ### Dispatcher
 The role of the `Dispatcher` is to initialize the `WorkerPool`, dispatch jobs as they are created, and wait for the go routines to finish before closing out the main thread.
