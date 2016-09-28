@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: 
+
+Sitemap: http://elauqsap.github.io/sitemap.xml 

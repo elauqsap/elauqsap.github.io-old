@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Development | thought|pipe]]></title>
+  <link href="http://elauqsap.github.io/blog/categories/development/atom.xml" rel="self"/>
+  <link href="http://elauqsap.github.io/"/>
+  <updated>2016-09-27T22:29:04-05:00</updated>
+  <id>http://elauqsap.github.io/</id>
+  <author>
+    <name><![CDATA[elauqsap]]></name>
+    <email><![CDATA[3lauqsap@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[How to Build a RESTful JSON API in Go - Testing Part I]]></title>
+    <link href="http://elauqsap.github.io/blog/2016/09/27/how-to-build-a-restful-json-api-in-go-testing-part-i/"/>
+    <updated>2016-09-27T22:11:53-05:00</updated>
+    <id>http://elauqsap.github.io/blog/2016/09/27/how-to-build-a-restful-json-api-in-go-testing-part-i</id>
+    <content type="html"><![CDATA[<p>In my recent endeavor with Go I needed to create a <a href="https://github.com/elauqsap/echo-postgres-json-api">RESTful JSON API with a Postgres database</a>. This blog series outlines what I learned and the methods chosen to implement the API. First up in this blog series demonstrates the implementation of Behavioral Driven Development utilizing <a href="https://github.com/smartystreets/goconvey">GoConvey</a>.</p>
+
+<!--more-->
+
+
+<h3>GoConvey Setup</h3>
+
+<p>There are two primary parts to test within this example and I decided to break them up into &ldquo;sub-packages&rdquo;. These &ldquo;sub-packages&rdquo; include api for handling the RESTful aspects and database for communicating with Postgres instance. Go makes testing very easy by sourcing any file <code>*_test.go</code> and running any test functions that start with <code>Test*</code>. For both &ldquo;sub-packages&rdquo; I created a single Test function and created a general structure to model each test structure.</p>
+
+<p>Take the <code>database</code> sub-package for example. There is only one test function and that is in <code>database_test.go</code>. The other test file only contains test cases to be conveyed.
+<code>bash
+database
+├── database.go
+├── database_test.go
+├── migrate.go
+├── user.go
+└── user_test.go
+</code>
+Diving deeper into <code>TestDatabase()</code>, we test out database connection items and migrate our schema for the test environment. The final portion of the function takes <code>[]ModelTest</code> and runs each test case.</p>
+
+<pre><code class="go">type (
+    ModelTest struct {
+        Title string
+        Func  func(*Store) func()
+    }
+    TestConfig struct {
+        Config `json:"database"`
+    }
+)
+
+var Conf TestConfig
+var Data *Store
+
+func TestDatabase(t *testing.T) {
+    Convey("The Database Should", t, func() {
+        Convey("Be Configurable From A JSON File", func() {
+            data, err := ioutil.ReadFile("../configs/example.config.json")
+            So(err, ShouldBeNil)
+            So(json.Unmarshal(data, &amp;Conf), ShouldBeNil)
+            So(Conf, ShouldNotBeEmpty)
+            Data, err = Conf.NewStore()
+            So(err, ShouldBeNil)
+            So(Data, ShouldNotBeNil)
+        })
+        Convey("Have Migrations For The Schema", func() {
+            So(Data.Migrate(false), ShouldBeNil)
+        })
+    })
+    var modelTests = []ModelTest{UserTest}
+    for _, model := range modelTests {
+        Convey("The Database "+model.Title, t, model.Func(Data))
+    }
+}
+</code></pre>
+
+<p>As you can see the <code>ModelTest</code> structure is in essence the parameters necessary to run <code>Convey()</code>. Since <code>*testing.T</code> was passed in the outermost <code>Convey()</code> it is not necessary for these nested tests. There for we can pass it a <code>string</code> conveying what it will test and some arbitrary test <code>func()</code>. Below is the test of the <code>POST</code> portion of the RESTful interface for the user model. The other conveyed tests in <code>user_test.go</code> check <code>GET</code>, <code>PUT</code>, &amp; <code>DELETE</code> implementation.</p>
+
+<pre><code class="go">var UserTest = ModelTest{
+    Title: "User Model Should",
+    Func: func(store *Store) func() {
+        return func() {
+            Convey("Implement The CRUD Interface", func() {
+                So(&amp;User{}, ShouldImplement, (*CRUD)(nil))
+                Convey("A User Can Be Created", func() {
+                    So(store.Upsert(user, new(PropertyMap)), ShouldBeNil)
+                    read := new(User)
+                    pm := new(PropertyMap)
+                    So(store.SingleRowTransact(user.Read(), pm), ShouldBeNil)
+                    data, err := json.Marshal(pm)
+                    So(err, ShouldBeNil)
+                    So(json.Unmarshal(data, read), ShouldBeNil)
+                    So(read, ShouldResemble, user)
+                })
+                // Other Model tests go here ...
+            })
+        }
+    },
+}
+</code></pre>
+
+<h3>Running Tests</h3>
+
+<p>After writing all of our test cases for the model, we can implement the model using red to green testing. I will go into implementing a model at a later date but below is the output you would get after running <code>go test -v</code> with completed code.
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="o">===</span> RUN   TestDatabase&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;  The Database Should
+</span><span class='line'>    Be Configurable From A JSON File ✔✔✔✔✔
+</span><span class='line'>    Have Migrations For The Schema ✔&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;6 total assertions&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;  The Database User Model Should
+</span><span class='line'>    Implement The CRUD Interface ✔
+</span><span class='line'>      A User Can Be Created ✔✔✔✔✔✔
+</span><span class='line'>      A User Can Be Read ✔✔✔✔✔
+</span><span class='line'>      A User Can Be Updated ✔✔✔✔✔✔
+</span><span class='line'>      A User Can Be Deleted ✔✔&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;26 total assertions&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;<span class="p">&amp;</span>mdash<span class="p">;</span> PASS: TestDatabase <span class="o">(</span>0.08s<span class="o">)</span>
+</span><span class='line'>PASS
+</span><span class='line'>ok      github.com/elauqsap/echo-postgres-json-api/database     0.083
+</span></code></pre></td></tr></table></div></figure></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Building a Go Work Pool and Dispatcher]]></title>
+    <link href="http://elauqsap.github.io/blog/2016/05/25/building-a-go-work-pool-and-dispatcher/"/>
+    <updated>2016-05-25T22:41:16-05:00</updated>
+    <id>http://elauqsap.github.io/blog/2016/05/25/building-a-go-work-pool-and-dispatcher</id>
+    <content type="html"><![CDATA[<p>I recently started working with <a href="https://golang.org/">Go</a> which is a very opinionated open source programming language from Google and contributors. It is a fantastic language and I rather enjoy how it has helped me develop as a programmer these past few months.</p>
+
+<!--more-->
+
+
+<h3>Back Story</h3>
+
+<p>My new position at work requires me to work with a large data set that I decided to truncate into smaller sets for processing. I wanted to process each batch in parallel but without restricting myself to a single &ldquo;job type&rdquo;. So that in the future when the code requires a different &ldquo;job type&rdquo; I would not have to wrangle multiple work pools. In developing the solution, I found a work around to Go&rsquo;s lack of generics so I could process multiple &ldquo;job types&rdquo; via the same work pool. This code is modified from a blog post written <a href="http://marcio.io/2015/07/handling-1-million-requests-per-minute-with-golang/">here</a>. I also packaged this code for my reuse <a href="https://github.com/elauqsap/workerpool">here</a>.</p>
+
+<h3>Dispatcher</h3>
+
+<p>The role of the <code>Dispatcher</code> is to initialize the <code>WorkerPool</code>, dispatch jobs as they are created, and wait for the go routines to finish before closing out the main thread.</p>
+
+<pre><code class="go dispatcher.go">
+package main
+
+import "sync"
+
+// Dispatcher creates workers and dispatches jobs when received
+type Dispatcher struct {
+    JobQueue   chan Job
+    MaxWorkers int
+    WaitGroup  *sync.WaitGroup
+    // A pool of workers channels that are registered with the dispatcher
+    WorkerPool chan chan Job
+}
+
+// NewDispatcher creates a dispatcher that is used to create workers
+// and dispatch jobs to them
+func NewDispatcher(maxWorkers int) *Dispatcher {
+    pool := make(chan chan Job, maxWorkers)
+    return &amp;Dispatcher{JobQueue: make(chan Job, 1024), MaxWorkers: maxWorkers, WorkerPool: pool, WaitGroup: &amp;sync.WaitGroup{}}
+}
+
+// Run creates the workers and dispatches jobs from a JobQueue to each worker
+func (d *Dispatcher) Run() {
+    // starting n number of workers
+    for i := 0; i &lt; d.MaxWorkers; i++ {
+        worker := NewWorker(d.WorkerPool, d.WaitGroup)
+        worker.Start()
+    }
+
+  // start the dispatcher routine
+    go d.dispatch()
+}
+
+func (d *Dispatcher) dispatch() {
+    for {
+        select {
+        case job := &lt;-d.JobQueue:
+            // a job request has been received
+            go func(job Job) {
+                // try to obtain a worker job channel that is available.
+                // this will block until a worker is idle
+                jobChannel := &lt;-d.WorkerPool
+                // dispatch the job to the worker job channel
+                jobChannel &lt;- job
+            }(job)
+        }
+    }
+}
+</code></pre>
+
+<h3>Worker</h3>
+
+<p>A <code>Worker</code> is started by the <code>Dispatcher</code>and registers itself to the <code>WorkerPool</code>. Once a <code>Job</code> has been sent to the <code>Dispatcher</code>, it waits for a <code>Worker</code> to become ready for processing and hands off the <code>Job</code> to the <code>Worker</code>. The <code>Worker</code> triggers the <code>process()</code> method of the <code>Job</code>.</p>
+
+<pre><code class="go worker.go">package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+// Worker represents the worker that executes the job
+type Worker struct {
+  // A pool of workers channels that are registered with the dispatcher
+    WorkerPool chan chan Job
+  // A channel for receiving a job that was dispatched
+    JobChannel chan Job
+  // A channel for receiving a worker termination signal
+  // (quits after processing)
+  quit       chan bool
+  // A WaitGroup to signal the completed processing of a Job
+    wg         *sync.WaitGroup
+}
+
+// NewWorker creates a new worker that can be registered to a WorkerPool
+// and receive jobs
+func NewWorker(workerPool chan chan Job, wg *sync.WaitGroup) Worker {
+    return Worker{
+        WorkerPool: workerPool,
+        JobChannel: make(chan Job),
+        quit:       make(chan bool),
+        wg:         wg}
+}
+
+// Start method starts the run loop for the worker, listening for a quit channel in
+// case we need to stop it
+func (w Worker) Start() {
+    go func() {
+        for {
+            // register the current worker into the worker queue.
+            w.WorkerPool &lt;- w.JobChannel
+
+            select {
+            case job := &lt;-w.JobChannel:
+                job.process()
+              // signal to the wait group that a queued job has been processed
+              // so the main thread can continue
+                w.wg.Done()
+            case &lt;-w.quit:
+                // we have received a signal to stop
+                return
+            }
+        }
+    }()
+}
+</code></pre>
+
+<h3>Job</h3>
+
+<p>All <code>Job</code> types implement a <code>process()</code> method. This way we do not need to infer types in the <code>Worker</code> thus allowing us to achieve a level of generic types in Go.</p>
+
+<pre><code class="go jobs.go">package main
+
+// Job interface will be implemented for each task so that they
+// may be passed to workers in the pool by the dispatcher
+type Job interface {
+    process() error
+}
+
+type BatchJob struct {
+  // define the struct
+}
+
+func (b BatchJob) process() error {
+  // process data here for batch sets ...
+}
+
+type SingleJob struct {
+  // define the struct
+}
+
+func (s SingleJob) process() error {
+  // process data here for a single set ...
+}
+</code></pre>
+
+<h3>All Together Now</h3>
+
+<p>Here is an example of the above code in action. The <code>struct</code> need to be defined and <code>process()</code> implemented but it demonstrates the overall concept.</p>
+
+<pre><code class="go main.go">package main
+
+func main() {
+  // Initialize a Dispatcher
+  dispatcher := NewDispatcher(4)
+  // Start the Dispatcher and create/register the Workers to the WorkerPool
+  dispatcher.Run()
+  // Queue two jobs for processing
+  dispatcher.WaitGroup.Add(2)
+  // Two jobs of different structures queued
+  dispatcher.JobQueue &lt;- BatchJob{}
+  dispatcher.JobQueue &lt;- SingleJob{}
+  // Block main thread until processing in go routines completes
+  dispatcher.WaitGroup.Wait()
+}
+</code></pre>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Setting Up a Separate Development Environment in OS X]]></title>
+    <link href="http://elauqsap.github.io/blog/2015/02/14/setting-up-a-separate-development-environment-in-os-x/"/>
+    <updated>2015-02-14T01:30:39-06:00</updated>
+    <id>http://elauqsap.github.io/blog/2015/02/14/setting-up-a-separate-development-environment-in-os-x</id>
+    <content type="html"><![CDATA[<p>I like to keep my development environment separate from my host environment on my personal laptop. A simple solution for keeping them apart is to set up a headless virtual machine with a samba share. I like this method the most because you can set up a lightweight server that can easily load your code base into your favorite IDE or text editor. I will be using VirtualBox in this example but you can use Fusion as well, it just requires a different command.</p>
+
+<!--more-->
+
+
+<h4>Prerequisites</h4>
+
+<ol>
+<li>Download VirtualBox from <a href="https://www.virtualbox.org/wiki/Downloads">here</a></li>
+<li>Download Ubuntu Server (14.04 LTS in this example) from <a href="http://www.ubuntu.com/download/server">here</a></li>
+</ol>
+
+
+<p>First, I am going to setup my dotfiles to include a few aliases for interacting with the virtual machine. In your shell configuration file (zsh here) add the equivalent aliases so you can quickly start, mount, and remote into the server. Remember to replace $USER with whatever uid name you will be using on the guest server. Also $GUEST needs to be changed to whatever you call the virtual machine.</p>
+
+<pre><code class="bash .zshrc"># Ubuntu devbox aliases
+alias devbox='VBoxManage startvm "$GUEST" --type headless'
+alias sshdev='ssh devbox'
+alias mountdev='mount_smbfs //devbox/$USER ~/devbox'
+alias umountdev='umount ~/devbox'
+</code></pre>
+
+<p>After you have VirtualBox installed go ahead and create a new Virtual Machine. I carved off 2048 MB in RAM and 20 GB in storage for the development box. You should now have a basic virtual machine, but before you can boot it up we need to take care of a few things. First, create a Host-Only network that we will later attach as the second adapter (VirtualBox -> Preferences -> Network -> Host-only Networks). If &ldquo;vboxnet0&rdquo; is not already there, click the add button and then edit. Configuration listed below.</p>
+
+<pre><code># Adapter
+IPv4 Address: 10.10.1.1
+IPv4 Network Mask: 255.255.255.248
+IPv6 Address:
+IPv6 Network Mask Length: 0
+</code></pre>
+
+<hr />
+
+<pre><code># DHCP Server
+Uncheck Enable Server
+</code></pre>
+
+<p>Close out of VirtualBox&rsquo;s settings and highlight the virtual machine we created. We need to attach the ISO we downloaded earlier to the IDE Controller (Settings -> Storage). Once you have added the ISO to empty IDE slot we are going to switch to the Networking tab to setup our interfaces. The first adapter should be set to NAT. If it is not selected go to the drop down for &ldquo;Attached to:&rdquo; and add it. Flip into the second adapter and set it to be Host-only. We are done configuring the virtual machine, go ahead and boot the server and follow the basic install instructions. With Ubuntu, you can choose to install Samba and Open SSH Server during the installation process so that kills two birds with one stone for us.</p>
+
+<p>Once the installation is complete and the server reboots, we need to modify two files on the system. The first file I have listed below is your interfaces file. The first adapter &ldquo;eth0&rdquo; will be your NAT so the host can communicate outbound to receive packages. Leave this interface configured for DHCP. The second adapter &ldquo;eth1&rdquo; is on our Host-Only network and needs a static address. This network allows the host system to connect to any of the public facing services on the headless virtual machine (SSH, Web Server, MongoDB, etc).</p>
+
+<pre><code class="bash /etc/network/interfaces"># This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet dhcp
+
+# Host-only interface
+auto eth1
+iface eth1 inet static
+    address     10.10.1.2
+    netmask     255.255.255.248
+    network     10.10.1.0
+    broadcast   10.10.1.7
+</code></pre>
+
+<p>The second file is our samba share configuration that will let you mount the home directory of the guest user. This is where you will store your code base and anything else related to the application. Once you mount it on your host system you can open the project up in your favorite IDE or text editor and begin working. Just remember to save often and unmount the share before shutting down the virtual machine.</p>
+
+<pre><code class="bash /etc/samba/smb.conf">[dev]
+    comment = $USER
+    path = /home/$USER
+    guest ok = no
+    browseable = no
+    writeable = yes
+    create mask = 0600
+    directory mask = 0700
+</code></pre>
+
+<p>On your OS X system, edit your hosts file to include an entry for your virtual machine. This way you can address it by a friendly host name rather than an IP address.</p>
+
+<pre><code class="bash /etc/hosts">127.0.0.1   localhost
+255.255.255.255 broadcasthost
+::1             localhost
+fe80::1%lo0 localhost
+
+# VirtualBox Hosts
+10.10.1.2       devbox
+</code></pre>
+
+<p>That&rsquo;s it! Now you can easily start, mount, and control your virtual machine all from your host system. Just enter &ldquo;devbox&rdquo; or whatever alias you changed it to and the virtual machine will boot up in headless mode.</p>
+]]></content>
+  </entry>
+  
+</feed>

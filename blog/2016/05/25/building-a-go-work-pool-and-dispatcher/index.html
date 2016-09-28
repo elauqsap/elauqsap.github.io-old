@@ -1,0 +1,457 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Building a Go Work Pool and Dispatcher - thought|pipe</title>
+  <meta name="author" content="elauqsap">
+
+  
+  <meta name="description" content="Building a Go Work Pool and Dispatcher written in development, go, tips & tricks I recently started working with Go which is a very opinionated open &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://elauqsap.github.io/blog/2016/05/25/building-a-go-work-pool-and-dispatcher">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="thought|pipe" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-46649594-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+  <body>
+    <a href="/" class="home-icon">
+      <img src="/images/home.png"/>
+    </a>
+
+    <article role="article" class="full-single-article">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h1>Building a Go Work Pool and Dispatcher</h1>
+        <div class="meta">
+          written 
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2016-05-25T22:41:16-05:00" pubdate data-updated="true"></time>
+          
+
+in
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/development/'>development</a>, <a class='category' href='/blog/categories/go/'>go</a>, <a class='category' href='/blog/categories/tips-and-tricks/'>tips & tricks</a>
+  
+</span>
+
+
+        </div>
+        <p>I recently started working with <a href="https://golang.org/">Go</a> which is a very opinionated open source programming language from Google and contributors. It is a fantastic language and I rather enjoy how it has helped me develop as a programmer these past few months.</p>
+
+<!--more-->
+
+
+<h3>Back Story</h3>
+
+<p>My new position at work requires me to work with a large data set that I decided to truncate into smaller sets for processing. I wanted to process each batch in parallel but without restricting myself to a single &ldquo;job type&rdquo;. So that in the future when the code requires a different &ldquo;job type&rdquo; I would not have to wrangle multiple work pools. In developing the solution, I found a work around to Go&rsquo;s lack of generics so I could process multiple &ldquo;job types&rdquo; via the same work pool. This code is modified from a blog post written <a href="http://marcio.io/2015/07/handling-1-million-requests-per-minute-with-golang/">here</a>. I also packaged this code for my reuse <a href="https://github.com/elauqsap/workerpool">here</a>.</p>
+
+<h3>Dispatcher</h3>
+
+<p>The role of the <code>Dispatcher</code> is to initialize the <code>WorkerPool</code>, dispatch jobs as they are created, and wait for the go routines to finish before closing out the main thread.</p>
+
+<figure class='code'><figcaption><span>dispatcher.go</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kn">package</span> <span class="nx">main</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="s">&quot;sync&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Dispatcher creates workers and dispatches jobs when received</span>
+</span><span class='line'><span class="kd">type</span> <span class="nx">Dispatcher</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">JobQueue</span>   <span class="kd">chan</span> <span class="nx">Job</span>
+</span><span class='line'>  <span class="nx">MaxWorkers</span> <span class="kt">int</span>
+</span><span class='line'>  <span class="nx">WaitGroup</span>  <span class="o">*</span><span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span>
+</span><span class='line'>  <span class="c1">// A pool of workers channels that are registered with the dispatcher</span>
+</span><span class='line'>  <span class="nx">WorkerPool</span> <span class="kd">chan</span> <span class="kd">chan</span> <span class="nx">Job</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// NewDispatcher creates a dispatcher that is used to create workers</span>
+</span><span class='line'><span class="c1">// and dispatch jobs to them</span>
+</span><span class='line'><span class="kd">func</span> <span class="nx">NewDispatcher</span><span class="p">(</span><span class="nx">maxWorkers</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Dispatcher</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">pool</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">chan</span> <span class="nx">Job</span><span class="p">,</span> <span class="nx">maxWorkers</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">return</span> <span class="o">&amp;</span><span class="nx">Dispatcher</span><span class="p">{</span><span class="nx">JobQueue</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">Job</span><span class="p">,</span> <span class="mi">1024</span><span class="p">),</span> <span class="nx">MaxWorkers</span><span class="p">:</span> <span class="nx">maxWorkers</span><span class="p">,</span> <span class="nx">WorkerPool</span><span class="p">:</span> <span class="nx">pool</span><span class="p">,</span> <span class="nx">WaitGroup</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Run creates the workers and dispatches jobs from a JobQueue to each worker</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">Dispatcher</span><span class="p">)</span> <span class="nx">Run</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// starting n number of workers</span>
+</span><span class='line'>  <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">d</span><span class="p">.</span><span class="nx">MaxWorkers</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">worker</span> <span class="o">:=</span> <span class="nx">NewWorker</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">WorkerPool</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">)</span>
+</span><span class='line'>      <span class="nx">worker</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// start the dispatcher routine</span>
+</span><span class='line'>  <span class="k">go</span> <span class="nx">d</span><span class="p">.</span><span class="nx">dispatch</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">Dispatcher</span><span class="p">)</span> <span class="nx">dispatch</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">for</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">select</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="nx">job</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">d</span><span class="p">.</span><span class="nx">JobQueue</span><span class="p">:</span>
+</span><span class='line'>          <span class="c1">// a job request has been received</span>
+</span><span class='line'>          <span class="k">go</span> <span class="kd">func</span><span class="p">(</span><span class="nx">job</span> <span class="nx">Job</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>              <span class="c1">// try to obtain a worker job channel that is available.</span>
+</span><span class='line'>              <span class="c1">// this will block until a worker is idle</span>
+</span><span class='line'>              <span class="nx">jobChannel</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">d</span><span class="p">.</span><span class="nx">WorkerPool</span>
+</span><span class='line'>              <span class="c1">// dispatch the job to the worker job channel</span>
+</span><span class='line'>              <span class="nx">jobChannel</span> <span class="o">&lt;-</span> <span class="nx">job</span>
+</span><span class='line'>          <span class="p">}(</span><span class="nx">job</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Worker</h3>
+
+<p>A <code>Worker</code> is started by the <code>Dispatcher</code>and registers itself to the <code>WorkerPool</code>. Once a <code>Job</code> has been sent to the <code>Dispatcher</code>, it waits for a <code>Worker</code> to become ready for processing and hands off the <code>Job</code> to the <code>Worker</code>. The <code>Worker</code> triggers the <code>process()</code> method of the <code>Job</code>.</p>
+
+<figure class='code'><figcaption><span>worker.go</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kn">package</span> <span class="nx">main</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="p">(</span>
+</span><span class='line'>  <span class="s">&quot;fmt&quot;</span>
+</span><span class='line'>  <span class="s">&quot;sync&quot;</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Worker represents the worker that executes the job</span>
+</span><span class='line'><span class="kd">type</span> <span class="nx">Worker</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// A pool of workers channels that are registered with the dispatcher</span>
+</span><span class='line'>  <span class="nx">WorkerPool</span> <span class="kd">chan</span> <span class="kd">chan</span> <span class="nx">Job</span>
+</span><span class='line'>  <span class="c1">// A channel for receiving a job that was dispatched</span>
+</span><span class='line'>  <span class="nx">JobChannel</span> <span class="kd">chan</span> <span class="nx">Job</span>
+</span><span class='line'>  <span class="c1">// A channel for receiving a worker termination signal</span>
+</span><span class='line'>  <span class="c1">// (quits after processing)</span>
+</span><span class='line'>  <span class="nx">quit</span>       <span class="kd">chan</span> <span class="kt">bool</span>
+</span><span class='line'>  <span class="c1">// A WaitGroup to signal the completed processing of a Job</span>
+</span><span class='line'>  <span class="nx">wg</span>         <span class="o">*</span><span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// NewWorker creates a new worker that can be registered to a WorkerPool</span>
+</span><span class='line'><span class="c1">// and receive jobs</span>
+</span><span class='line'><span class="kd">func</span> <span class="nx">NewWorker</span><span class="p">(</span><span class="nx">workerPool</span> <span class="kd">chan</span> <span class="kd">chan</span> <span class="nx">Job</span><span class="p">,</span> <span class="nx">wg</span> <span class="o">*</span><span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">)</span> <span class="nx">Worker</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">Worker</span><span class="p">{</span>
+</span><span class='line'>      <span class="nx">WorkerPool</span><span class="p">:</span> <span class="nx">workerPool</span><span class="p">,</span>
+</span><span class='line'>      <span class="nx">JobChannel</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">Job</span><span class="p">),</span>
+</span><span class='line'>      <span class="nx">quit</span><span class="p">:</span>       <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">bool</span><span class="p">),</span>
+</span><span class='line'>      <span class="nx">wg</span><span class="p">:</span>         <span class="nx">wg</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Start method starts the run loop for the worker, listening for a quit channel in</span>
+</span><span class='line'><span class="c1">// case we need to stop it</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">w</span> <span class="nx">Worker</span><span class="p">)</span> <span class="nx">Start</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">for</span> <span class="p">{</span>
+</span><span class='line'>          <span class="c1">// register the current worker into the worker queue.</span>
+</span><span class='line'>          <span class="nx">w</span><span class="p">.</span><span class="nx">WorkerPool</span> <span class="o">&lt;-</span> <span class="nx">w</span><span class="p">.</span><span class="nx">JobChannel</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="k">select</span> <span class="p">{</span>
+</span><span class='line'>          <span class="k">case</span> <span class="nx">job</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">w</span><span class="p">.</span><span class="nx">JobChannel</span><span class="p">:</span>
+</span><span class='line'>              <span class="nx">job</span><span class="p">.</span><span class="nx">process</span><span class="p">()</span>
+</span><span class='line'>              <span class="c1">// signal to the wait group that a queued job has been processed</span>
+</span><span class='line'>              <span class="c1">// so the main thread can continue</span>
+</span><span class='line'>              <span class="nx">w</span><span class="p">.</span><span class="nx">wg</span><span class="p">.</span><span class="nx">Done</span><span class="p">()</span>
+</span><span class='line'>          <span class="k">case</span> <span class="o">&lt;-</span><span class="nx">w</span><span class="p">.</span><span class="nx">quit</span><span class="p">:</span>
+</span><span class='line'>              <span class="c1">// we have received a signal to stop</span>
+</span><span class='line'>              <span class="k">return</span>
+</span><span class='line'>          <span class="p">}</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}()</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Job</h3>
+
+<p>All <code>Job</code> types implement a <code>process()</code> method. This way we do not need to infer types in the <code>Worker</code> thus allowing us to achieve a level of generic types in Go.</p>
+
+<figure class='code'><figcaption><span>jobs.go</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kn">package</span> <span class="nx">main</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Job interface will be implemented for each task so that they</span>
+</span><span class='line'><span class="c1">// may be passed to workers in the pool by the dispatcher</span>
+</span><span class='line'><span class="kd">type</span> <span class="nx">Job</span> <span class="kd">interface</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">process</span><span class="p">()</span> <span class="kt">error</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">type</span> <span class="nx">BatchJob</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// define the struct</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="nx">BatchJob</span><span class="p">)</span> <span class="nx">process</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// process data here for batch sets ...</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">type</span> <span class="nx">SingleJob</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// define the struct</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="nx">SingleJob</span><span class="p">)</span> <span class="nx">process</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// process data here for a single set ...</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>All Together Now</h3>
+
+<p>Here is an example of the above code in action. The <code>struct</code> need to be defined and <code>process()</code> implemented but it demonstrates the overall concept.</p>
+
+<figure class='code'><figcaption><span>main.go</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kn">package</span> <span class="nx">main</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// Initialize a Dispatcher</span>
+</span><span class='line'>  <span class="nx">dispatcher</span> <span class="o">:=</span> <span class="nx">NewDispatcher</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'>  <span class="c1">// Start the Dispatcher and create/register the Workers to the WorkerPool</span>
+</span><span class='line'>  <span class="nx">dispatcher</span><span class="p">.</span><span class="nx">Run</span><span class="p">()</span>
+</span><span class='line'>  <span class="c1">// Queue two jobs for processing</span>
+</span><span class='line'>  <span class="nx">dispatcher</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span class='line'>  <span class="c1">// Two jobs of different structures queued</span>
+</span><span class='line'>  <span class="nx">dispatcher</span><span class="p">.</span><span class="nx">JobQueue</span> <span class="o">&lt;-</span> <span class="nx">BatchJob</span><span class="p">{}</span>
+</span><span class='line'>  <span class="nx">dispatcher</span><span class="p">.</span><span class="nx">JobQueue</span> <span class="o">&lt;-</span> <span class="nx">SingleJob</span><span class="p">{}</span>
+</span><span class='line'>  <span class="c1">// Block main thread until processing in go routines completes</span>
+</span><span class='line'>  <span class="nx">dispatcher</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">.</span><span class="nx">Wait</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+        <hr class="divider-short"/>
+
+        
+      </div>
+    </div>
+  </div>
+</article>
+
+<hr class="divider-short"/>
+
+<div class="archive-link">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        
+          <a class="pull-left" href="/blog/2015/08/11/more-emails-with-malicious-javascript-attachments/" title="Previous Post: More Emails With Malicious JavaScript Attachments">&laquo; Previous: More Emails With Malicious JavaScript Attachments</a>
+        
+
+        
+          <a class="pull-right" href="/blog/2016/09/27/how-to-build-a-restful-json-api-in-go-testing-part-i/" title="Next Post: How To Build a RESTful JSON API in Go - Testing Part I">Next: How To Build a RESTful JSON API in Go - Testing Part I &raquo;</a>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+    <footer id="footer" class="her-row">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+  <a href="/"><h4>Home</h4></a>
+</div>
+
+<div class="col-md-2">
+  <div class="social-icon-list">
+    
+    <a href="https://twitter.com/_elauqsap"><img src="/images/glyphicons_social_31_twitter.png"/></a>
+    
+
+    
+    <a href="https://github.com/elauqsap"><img src="/images/glyphicons_social_21_github.png"/></a>
+    
+
+    
+
+    
+    <a href="mailto:3lauqsap@gmail.com"><img src="/images/glyphicons_social_39_e-mail.png"/></a>
+    
+  </div>
+</div>
+
+<div class="pull-right">
+  <h4>Powered by <a href="http://octopress.org/">Octopress</a>.</h4>
+</div>
+
+
+    </div>
+  </div>
+</footer>
+
+    
+  </body>
+</html>

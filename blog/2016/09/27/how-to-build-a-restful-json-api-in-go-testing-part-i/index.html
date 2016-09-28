@@ -1,0 +1,343 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>How to Build a RESTful JSON API in Go - Testing Part I - thought|pipe</title>
+  <meta name="author" content="elauqsap">
+
+  
+  <meta name="description" content="How to Build a RESTful JSON API in Go - Testing Part I written in development, go, tips & tricks In my recent endeavor with Go I needed to create a &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://elauqsap.github.io/blog/2016/09/27/how-to-build-a-restful-json-api-in-go-testing-part-i">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="thought|pipe" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-46649594-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+  <body>
+    <a href="/" class="home-icon">
+      <img src="/images/home.png"/>
+    </a>
+
+    <article role="article" class="full-single-article">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h1>How to Build a RESTful JSON API in Go - Testing Part I</h1>
+        <div class="meta">
+          written 
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2016-09-27T22:11:53-05:00" pubdate data-updated="true"></time>
+          
+
+in
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/development/'>development</a>, <a class='category' href='/blog/categories/go/'>go</a>, <a class='category' href='/blog/categories/tips-and-tricks/'>tips & tricks</a>
+  
+</span>
+
+
+        </div>
+        <p>In my recent endeavor with Go I needed to create a <a href="https://github.com/elauqsap/echo-postgres-json-api">RESTful JSON API with a Postgres database</a>. This blog series outlines what I learned and the methods chosen to implement the API. First up in this blog series demonstrates the implementation of Behavioral Driven Development utilizing <a href="https://github.com/smartystreets/goconvey">GoConvey</a>.</p>
+
+<!--more-->
+
+
+<h3>GoConvey Setup</h3>
+
+<p>There are two primary parts to test within this example and I decided to break them up into &ldquo;sub-packages&rdquo;. These &ldquo;sub-packages&rdquo; include api for handling the RESTful aspects and database for communicating with Postgres instance. Go makes testing very easy by sourcing any file <code>*_test.go</code> and running any test functions that start with <code>Test*</code>. For both &ldquo;sub-packages&rdquo; I created a single Test function and created a general structure to model each test structure.</p>
+
+<p>Take the <code>database</code> sub-package for example. There is only one test function and that is in <code>database_test.go</code>. The other test file only contains test cases to be conveyed.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>database
+</span><span class='line'>├── database.go
+</span><span class='line'>├── database_test.go
+</span><span class='line'>├── migrate.go
+</span><span class='line'>├── user.go
+</span><span class='line'>└── user_test.go
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Diving deeper into <code>TestDatabase()</code>, we test out database connection items and migrate our schema for the test environment. The final portion of the function takes <code>[]ModelTest</code> and runs each test case.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">type</span> <span class="p">(</span>
+</span><span class='line'>    <span class="nx">ModelTest</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">Title</span> <span class="kt">string</span>
+</span><span class='line'>        <span class="nx">Func</span>  <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="kd">func</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="nx">TestConfig</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">Config</span> <span class="s">`json:&quot;database&quot;`</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">Conf</span> <span class="nx">TestConfig</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">Data</span> <span class="o">*</span><span class="nx">Store</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">func</span> <span class="nx">TestDatabase</span><span class="p">(</span><span class="nx">t</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;The Database Should&quot;</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Be Configurable From A JSON File&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nx">ReadFile</span><span class="p">(</span><span class="s">&quot;../configs/example.config.json&quot;</span><span class="p">)</span>
+</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">Conf</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">Conf</span><span class="p">,</span> <span class="nx">ShouldNotBeEmpty</span><span class="p">)</span>
+</span><span class='line'>            <span class="nx">Data</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">Conf</span><span class="p">.</span><span class="nx">NewStore</span><span class="p">()</span>
+</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">Data</span><span class="p">,</span> <span class="nx">ShouldNotBeNil</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">})</span>
+</span><span class='line'>        <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Have Migrations For The Schema&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">Data</span><span class="p">.</span><span class="nx">Migrate</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">})</span>
+</span><span class='line'>    <span class="p">})</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">modelTests</span> <span class="p">=</span> <span class="p">[]</span><span class="nx">ModelTest</span><span class="p">{</span><span class="nx">UserTest</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">model</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">modelTests</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;The Database &quot;</span><span class="o">+</span><span class="nx">model</span><span class="p">.</span><span class="nx">Title</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="nx">model</span><span class="p">.</span><span class="nx">Func</span><span class="p">(</span><span class="nx">Data</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As you can see the <code>ModelTest</code> structure is in essence the parameters necessary to run <code>Convey()</code>. Since <code>*testing.T</code> was passed in the outermost <code>Convey()</code> it is not necessary for these nested tests. There for we can pass it a <code>string</code> conveying what it will test and some arbitrary test <code>func()</code>. Below is the test of the <code>POST</code> portion of the RESTful interface for the user model. The other conveyed tests in <code>user_test.go</code> check <code>GET</code>, <code>PUT</code>, &amp; <code>DELETE</code> implementation.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">var</span> <span class="nx">UserTest</span> <span class="p">=</span> <span class="nx">ModelTest</span><span class="p">{</span>
+</span><span class='line'>    <span class="nx">Title</span><span class="p">:</span> <span class="s">&quot;User Model Should&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">Func</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">store</span> <span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Implement The CRUD Interface&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">So</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">User</span><span class="p">{},</span> <span class="nx">ShouldImplement</span><span class="p">,</span> <span class="p">(</span><span class="o">*</span><span class="nx">CRUD</span><span class="p">)(</span><span class="kc">nil</span><span class="p">))</span>
+</span><span class='line'>                <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;A User Can Be Created&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">Upsert</span><span class="p">(</span><span class="nx">user</span><span class="p">,</span> <span class="nb">new</span><span class="p">(</span><span class="nx">PropertyMap</span><span class="p">)),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                    <span class="nx">read</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">User</span><span class="p">)</span>
+</span><span class='line'>                    <span class="nx">pm</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">PropertyMap</span><span class="p">)</span>
+</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">SingleRowTransact</span><span class="p">(</span><span class="nx">user</span><span class="p">.</span><span class="nx">Read</span><span class="p">(),</span> <span class="nx">pm</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                    <span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nx">Marshal</span><span class="p">(</span><span class="nx">pm</span><span class="p">)</span>
+</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="nx">read</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">read</span><span class="p">,</span> <span class="nx">ShouldResemble</span><span class="p">,</span> <span class="nx">user</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">})</span>
+</span><span class='line'>                <span class="c1">// Other Model tests go here ...</span>
+</span><span class='line'>            <span class="p">})</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Running Tests</h3>
+
+<p>After writing all of our test cases for the model, we can implement the model using red to green testing. I will go into implementing a model at a later date but below is the output you would get after running <code>go test -v</code> with completed code.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="o">===</span> RUN   TestDatabase
+</span><span class='line'>
+</span><span class='line'>  The Database Should
+</span><span class='line'>    Be Configurable From A JSON File ✔✔✔✔✔
+</span><span class='line'>    Have Migrations For The Schema ✔
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="m">6</span> total assertions
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  The Database User Model Should
+</span><span class='line'>    Implement The CRUD Interface ✔
+</span><span class='line'>      A User Can Be Created ✔✔✔✔✔✔
+</span><span class='line'>      A User Can Be Read ✔✔✔✔✔
+</span><span class='line'>      A User Can Be Updated ✔✔✔✔✔✔
+</span><span class='line'>      A User Can Be Deleted ✔✔
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="m">26</span> total assertions
+</span><span class='line'>
+</span><span class='line'>--- PASS: TestDatabase <span class="o">(</span>0.08s<span class="o">)</span>
+</span><span class='line'>PASS
+</span><span class='line'>ok      github.com/elauqsap/echo-postgres-json-api/database     0.083
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+        <hr class="divider-short"/>
+
+        
+      </div>
+    </div>
+  </div>
+</article>
+
+<hr class="divider-short"/>
+
+<div class="archive-link">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        
+          <a class="pull-left" href="/blog/2016/05/25/building-a-go-work-pool-and-dispatcher/" title="Previous Post: Building a Go Work Pool and Dispatcher">&laquo; Previous: Building a Go Work Pool and Dispatcher</a>
+        
+
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+    <footer id="footer" class="her-row">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+  <a href="/"><h4>Home</h4></a>
+</div>
+
+<div class="col-md-2">
+  <div class="social-icon-list">
+    
+    <a href="https://twitter.com/_elauqsap"><img src="/images/glyphicons_social_31_twitter.png"/></a>
+    
+
+    
+    <a href="https://github.com/elauqsap"><img src="/images/glyphicons_social_21_github.png"/></a>
+    
+
+    
+
+    
+    <a href="mailto:3lauqsap@gmail.com"><img src="/images/glyphicons_social_39_e-mail.png"/></a>
+    
+  </div>
+</div>
+
+<div class="pull-right">
+  <h4>Powered by <a href="http://octopress.org/">Octopress</a>.</h4>
+</div>
+
+
+    </div>
+  </div>
+</footer>
+
+    
+  </body>
+</html>

