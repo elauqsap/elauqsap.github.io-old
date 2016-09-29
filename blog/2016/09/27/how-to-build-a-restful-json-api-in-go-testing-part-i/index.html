@@ -144,37 +144,37 @@ in
 <span class='line-number'>32</span>
 <span class='line-number'>33</span>
 </pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">type</span> <span class="p">(</span>
-</span><span class='line'>    <span class="nx">ModelTest</span> <span class="kd">struct</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">Title</span> <span class="kt">string</span>
-</span><span class='line'>        <span class="nx">Func</span>  <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="kd">func</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="nx">TestConfig</span> <span class="kd">struct</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">Config</span> <span class="s">`json:&quot;database&quot;`</span>
-</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="nx">ModelTest</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">Title</span> <span class="kt">string</span>
+</span><span class='line'>      <span class="nx">Func</span>  <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="kd">func</span><span class="p">()</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nx">TestConfig</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">Config</span> <span class="s">`json:&quot;database&quot;`</span>
+</span><span class='line'>  <span class="p">}</span>
 </span><span class='line'><span class="p">)</span>
 </span><span class='line'>
 </span><span class='line'><span class="kd">var</span> <span class="nx">Conf</span> <span class="nx">TestConfig</span>
 </span><span class='line'><span class="kd">var</span> <span class="nx">Data</span> <span class="o">*</span><span class="nx">Store</span>
 </span><span class='line'>
 </span><span class='line'><span class="kd">func</span> <span class="nx">TestDatabase</span><span class="p">(</span><span class="nx">t</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;The Database Should&quot;</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Be Configurable From A JSON File&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>            <span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nx">ReadFile</span><span class="p">(</span><span class="s">&quot;../configs/example.config.json&quot;</span><span class="p">)</span>
-</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">Conf</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">Conf</span><span class="p">,</span> <span class="nx">ShouldNotBeEmpty</span><span class="p">)</span>
-</span><span class='line'>            <span class="nx">Data</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">Conf</span><span class="p">.</span><span class="nx">NewStore</span><span class="p">()</span>
-</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">Data</span><span class="p">,</span> <span class="nx">ShouldNotBeNil</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">})</span>
-</span><span class='line'>        <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Have Migrations For The Schema&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>            <span class="nx">So</span><span class="p">(</span><span class="nx">Data</span><span class="p">.</span><span class="nx">Migrate</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">})</span>
-</span><span class='line'>    <span class="p">})</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">modelTests</span> <span class="p">=</span> <span class="p">[]</span><span class="nx">ModelTest</span><span class="p">{</span><span class="nx">UserTest</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">model</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">modelTests</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;The Database &quot;</span><span class="o">+</span><span class="nx">model</span><span class="p">.</span><span class="nx">Title</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="nx">model</span><span class="p">.</span><span class="nx">Func</span><span class="p">(</span><span class="nx">Data</span><span class="p">))</span>
-</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;The Database Should&quot;</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Be Configurable From A JSON File&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nx">ReadFile</span><span class="p">(</span><span class="s">&quot;../configs/example.config.json&quot;</span><span class="p">)</span>
+</span><span class='line'>          <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>          <span class="nx">So</span><span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">Conf</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>          <span class="nx">So</span><span class="p">(</span><span class="nx">Conf</span><span class="p">,</span> <span class="nx">ShouldNotBeEmpty</span><span class="p">)</span>
+</span><span class='line'>          <span class="nx">Data</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">Conf</span><span class="p">.</span><span class="nx">NewStore</span><span class="p">()</span>
+</span><span class='line'>          <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>          <span class="nx">So</span><span class="p">(</span><span class="nx">Data</span><span class="p">,</span> <span class="nx">ShouldNotBeNil</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">})</span>
+</span><span class='line'>      <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Have Migrations For The Schema&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">So</span><span class="p">(</span><span class="nx">Data</span><span class="p">.</span><span class="nx">Migrate</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">})</span>
+</span><span class='line'>  <span class="p">})</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">modelTests</span> <span class="p">=</span> <span class="p">[]</span><span class="nx">ModelTest</span><span class="p">{</span><span class="nx">UserTest</span><span class="p">}</span>
+</span><span class='line'>  <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">model</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">modelTests</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;The Database &quot;</span><span class="o">+</span><span class="nx">model</span><span class="p">.</span><span class="nx">Title</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="nx">model</span><span class="p">.</span><span class="nx">Func</span><span class="p">(</span><span class="nx">Data</span><span class="p">))</span>
+</span><span class='line'>  <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
@@ -203,25 +203,25 @@ in
 <span class='line-number'>20</span>
 <span class='line-number'>21</span>
 </pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">var</span> <span class="nx">UserTest</span> <span class="p">=</span> <span class="nx">ModelTest</span><span class="p">{</span>
-</span><span class='line'>    <span class="nx">Title</span><span class="p">:</span> <span class="s">&quot;User Model Should&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="nx">Func</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">store</span> <span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>            <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Implement The CRUD Interface&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">So</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">User</span><span class="p">{},</span> <span class="nx">ShouldImplement</span><span class="p">,</span> <span class="p">(</span><span class="o">*</span><span class="nx">CRUD</span><span class="p">)(</span><span class="kc">nil</span><span class="p">))</span>
-</span><span class='line'>                <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;A User Can Be Created&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">Upsert</span><span class="p">(</span><span class="nx">user</span><span class="p">,</span> <span class="nb">new</span><span class="p">(</span><span class="nx">PropertyMap</span><span class="p">)),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>                    <span class="nx">read</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">User</span><span class="p">)</span>
-</span><span class='line'>                    <span class="nx">pm</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">PropertyMap</span><span class="p">)</span>
-</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">SingleRowTransact</span><span class="p">(</span><span class="nx">user</span><span class="p">.</span><span class="nx">Read</span><span class="p">(),</span> <span class="nx">pm</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>                    <span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nx">Marshal</span><span class="p">(</span><span class="nx">pm</span><span class="p">)</span>
-</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="nx">read</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
-</span><span class='line'>                    <span class="nx">So</span><span class="p">(</span><span class="nx">read</span><span class="p">,</span> <span class="nx">ShouldResemble</span><span class="p">,</span> <span class="nx">user</span><span class="p">)</span>
-</span><span class='line'>                <span class="p">})</span>
-</span><span class='line'>                <span class="c1">// Other Model tests go here ...</span>
-</span><span class='line'>            <span class="p">})</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>  <span class="nx">Title</span><span class="p">:</span> <span class="s">&quot;User Model Should&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">Func</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">store</span> <span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;Implement The CRUD Interface&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>              <span class="nx">So</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">User</span><span class="p">{},</span> <span class="nx">ShouldImplement</span><span class="p">,</span> <span class="p">(</span><span class="o">*</span><span class="nx">CRUD</span><span class="p">)(</span><span class="kc">nil</span><span class="p">))</span>
+</span><span class='line'>              <span class="nx">Convey</span><span class="p">(</span><span class="s">&quot;A User Can Be Created&quot;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>                  <span class="nx">So</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">EWT</span><span class="p">(</span><span class="nx">user</span><span class="p">.</span><span class="nx">Create</span><span class="p">()),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                  <span class="nx">read</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">User</span><span class="p">)</span>
+</span><span class='line'>                  <span class="nx">pm</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">PropertyMap</span><span class="p">)</span>
+</span><span class='line'>                  <span class="nx">So</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">QWT</span><span class="p">(</span><span class="nx">user</span><span class="p">.</span><span class="nx">Read</span><span class="p">(),</span> <span class="nx">pm</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                  <span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nx">Marshal</span><span class="p">(</span><span class="nx">pm</span><span class="p">)</span>
+</span><span class='line'>                  <span class="nx">So</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                  <span class="nx">So</span><span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="nx">read</span><span class="p">),</span> <span class="nx">ShouldBeNil</span><span class="p">)</span>
+</span><span class='line'>                  <span class="nx">So</span><span class="p">(</span><span class="nx">read</span><span class="p">,</span> <span class="nx">ShouldResemble</span><span class="p">,</span> <span class="nx">user</span><span class="p">)</span>
+</span><span class='line'>              <span class="p">})</span>
+</span><span class='line'>      <span class="c1">// Other Model tests go here ...</span>
+</span><span class='line'>      <span class="p">})</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="p">},</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 

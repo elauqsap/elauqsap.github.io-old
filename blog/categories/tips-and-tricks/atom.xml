@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Tips & Tricks | thought|pipe]]></title>
   <link href="http://elauqsap.github.io/blog/categories/tips-and-tricks/atom.xml" rel="self"/>
   <link href="http://elauqsap.github.io/"/>
-  <updated>2016-09-27T22:29:04-05:00</updated>
+  <updated>2016-09-29T10:27:37-05:00</updated>
   <id>http://elauqsap.github.io/</id>
   <author>
     <name><![CDATA[elauqsap]]></name>
@@ -82,19 +82,19 @@ func TestDatabase(t *testing.T) {
             Convey("Implement The CRUD Interface", func() {
                 So(&amp;User{}, ShouldImplement, (*CRUD)(nil))
                 Convey("A User Can Be Created", func() {
-                    So(store.Upsert(user, new(PropertyMap)), ShouldBeNil)
+                    So(store.EWT(user.Create()), ShouldBeNil)
                     read := new(User)
                     pm := new(PropertyMap)
-                    So(store.SingleRowTransact(user.Read(), pm), ShouldBeNil)
+                    So(store.QWT(user.Read(), pm), ShouldBeNil)
                     data, err := json.Marshal(pm)
                     So(err, ShouldBeNil)
                     So(json.Unmarshal(data, read), ShouldBeNil)
                     So(read, ShouldResemble, user)
                 })
-                // Other Model tests go here ...
-            })
-        }
-    },
+      // Other Model tests go here ...
+      })
+    }
+  },
 }
 </code></pre>
 
