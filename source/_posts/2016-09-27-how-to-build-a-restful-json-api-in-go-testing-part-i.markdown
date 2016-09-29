@@ -24,62 +24,62 @@ Diving deeper into `TestDatabase()`, we test out database connection items and m
 
 ```go
 type (
-    ModelTest struct {
-        Title string
-        Func  func(*Store) func()
-    }
-    TestConfig struct {
-        Config `json:"database"`
-    }
+	ModelTest struct {
+		Title string
+		Func  func(*Store) func()
+	}
+	TestConfig struct {
+		Config `json:"database"`
+	}
 )
 
 var Conf TestConfig
 var Data *Store
 
 func TestDatabase(t *testing.T) {
-    Convey("The Database Should", t, func() {
-        Convey("Be Configurable From A JSON File", func() {
-            data, err := ioutil.ReadFile("../configs/example.config.json")
-            So(err, ShouldBeNil)
-            So(json.Unmarshal(data, &Conf), ShouldBeNil)
-            So(Conf, ShouldNotBeEmpty)
-            Data, err = Conf.NewStore()
-            So(err, ShouldBeNil)
-            So(Data, ShouldNotBeNil)
-        })
-        Convey("Have Migrations For The Schema", func() {
-            So(Data.Migrate(false), ShouldBeNil)
-        })
-    })
-    var modelTests = []ModelTest{UserTest}
-    for _, model := range modelTests {
-        Convey("The Database "+model.Title, t, model.Func(Data))
-    }
+	Convey("The Database Should", t, func() {
+		Convey("Be Configurable From A JSON File", func() {
+			data, err := ioutil.ReadFile("../configs/example.config.json")
+			So(err, ShouldBeNil)
+			So(json.Unmarshal(data, &Conf), ShouldBeNil)
+			So(Conf, ShouldNotBeEmpty)
+			Data, err = Conf.NewStore()
+			So(err, ShouldBeNil)
+			So(Data, ShouldNotBeNil)
+		})
+		Convey("Have Migrations For The Schema", func() {
+			So(Data.Migrate(false), ShouldBeNil)
+		})
+	})
+	var modelTests = []ModelTest{UserTest}
+	for _, model := range modelTests {
+		Convey("The Database "+model.Title, t, model.Func(Data))
+	}
 }
 ```
 As you can see the `ModelTest` structure is in essence the parameters necessary to run `Convey()`. Since `*testing.T` was passed in the outermost `Convey()` it is not necessary for these nested tests. There for we can pass it a `string` conveying what it will test and some arbitrary test `func()`. Below is the test of the `POST` portion of the RESTful interface for the user model. The other conveyed tests in `user_test.go` check `GET`, `PUT`, & `DELETE` implementation.
 
 ```go
 var UserTest = ModelTest{
-    Title: "User Model Should",
-    Func: func(store *Store) func() {
-        return func() {
-            Convey("Implement The CRUD Interface", func() {
-                So(&User{}, ShouldImplement, (*CRUD)(nil))
-                Convey("A User Can Be Created", func() {
-                    So(store.Upsert(user, new(PropertyMap)), ShouldBeNil)
-                    read := new(User)
-                    pm := new(PropertyMap)
-                    So(store.SingleRowTransact(user.Read(), pm), ShouldBeNil)
-                    data, err := json.Marshal(pm)
-                    So(err, ShouldBeNil)
-                    So(json.Unmarshal(data, read), ShouldBeNil)
-                    So(read, ShouldResemble, user)
-                })
-                // Other Model tests go here ...
-            })
-        }
-    },
+	Title: "User Model Should",
+	Func: func(store *Store) func() {
+		return func() {
+			Convey("Implement The CRUD Interface", func() {
+				So(&User{}, ShouldImplement, (*CRUD)(nil))
+				Convey("A User Can Be Created", func() {
+					So(store.EWT(user.Create()), ShouldBeNil)
+					read := new(User)
+					pm := new(PropertyMap)
+					So(store.QWT(user.Read(), pm), ShouldBeNil)
+					data, err := json.Marshal(pm)
+					So(err, ShouldBeNil)
+					So(json.Unmarshal(data, read), ShouldBeNil)
+					So(read, ShouldResemble, user)
+				})
+      // Other Model tests go here ...
+      })
+    }
+  },
 }
 ```
 ### Running Tests
