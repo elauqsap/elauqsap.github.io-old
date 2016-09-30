@@ -4,7 +4,7 @@
   <title><![CDATA[thought|pipe]]></title>
   <link href="http://elauqsap.github.io/atom.xml" rel="self"/>
   <link href="http://elauqsap.github.io/"/>
-  <updated>2016-09-29T10:27:37-05:00</updated>
+  <updated>2016-09-30T00:21:45-05:00</updated>
   <id>http://elauqsap.github.io/</id>
   <author>
     <name><![CDATA[elauqsap]]></name>
@@ -12,6 +12,357 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[How to Build a RESTful JSON API in Go - Database Part II]]></title>
+    <link href="http://elauqsap.github.io/blog/2016/09/29/how-to-build-a-restful-json-api-in-go-database-part-ii/"/>
+    <updated>2016-09-29T23:19:20-05:00</updated>
+    <id>http://elauqsap.github.io/blog/2016/09/29/how-to-build-a-restful-json-api-in-go-database-part-ii</id>
+    <content type="html"><![CDATA[<p>In this portion of building a <a href="https://github.com/elauqsap/echo-postgres-json-api">RESTful JSON API with a Postgres database</a>, we explore the database powering the backend. I decided to use the builtin SQL library with a Postgres driver rather than using an ORM.</p>
+
+<!--more-->
+
+
+<h3>Database</h3>
+
+<p>Configuring the connection is important and we need to make sure it can used elsewhere. By exporting <code>Config</code> we can embed it in another configuration structure and populate them all at once using JSON tags. Plus by adding a method receiver we can easily return a connection after a configuration file has been parsed.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">type</span> <span class="p">(</span>
+</span><span class='line'>  <span class="c1">// Config for postgres db</span>
+</span><span class='line'>  <span class="nx">Config</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">Auth</span>
+</span><span class='line'>    <span class="nx">Name</span>           <span class="kt">string</span> <span class="s">`json:&quot;name&quot;`</span>
+</span><span class='line'>    <span class="nx">Host</span>           <span class="kt">string</span> <span class="s">`json:&quot;host&quot;`</span>
+</span><span class='line'>    <span class="nx">Port</span>           <span class="kt">int</span>    <span class="s">`json:&quot;port&quot;`</span>
+</span><span class='line'>    <span class="nx">SSL</span>            <span class="kt">string</span> <span class="s">`json:&quot;ssl_mode&quot;`</span>
+</span><span class='line'>    <span class="nx">ConnectTimeout</span> <span class="kt">int</span>    <span class="s">`json:&quot;connect_timeout&quot;`</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="c1">// Store embeds an instance of a sql.DB so we can</span>
+</span><span class='line'>  <span class="c1">// inject new method receivers</span>
+</span><span class='line'>  <span class="nx">Store</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>    <span class="o">*</span><span class="nx">sql</span><span class="p">.</span><span class="nx">DB</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// NewStore returns a configured *Store instance</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="nx">Config</span><span class="p">)</span> <span class="nx">NewStore</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Store</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">pg</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">Reverse</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Auth</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nx">source</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;user=%s password=%s dbname=%s host=%s port=%d sslmode=%s connect_timeout=%d&quot;</span><span class="p">,</span> <span class="nx">pg</span><span class="p">.</span><span class="nx">A</span><span class="p">,</span> <span class="nx">pg</span><span class="p">.</span><span class="nx">B</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Host</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Port</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">SSL</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">ConnectTimeout</span><span class="p">)</span>
+</span><span class='line'>  <span class="nx">db</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;postgres&quot;</span><span class="p">,</span> <span class="nx">source</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">Ping</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="o">&amp;</span><span class="nx">Store</span><span class="p">{</span><span class="nx">db</span><span class="p">},</span> <span class="kc">nil</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Because Go allows embedding structures in each other I decided to embed a <code>*sql.DB</code> into a new structure so that I can expand upon it&rsquo;s functions. As seen above we create a new <code>Store{}</code> which contains an embedded pointer to a SQL database. From here we can create new pointer receiver methods that implement functionality that we need. In the example below I created two new methods to perform <code>Exec()</code> &amp; <code>QueryRow()</code> with a SQL transaction.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="c1">// EWT is execute with transaction</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="nx">EWT</span><span class="p">(</span><span class="nx">st</span> <span class="nx">Statement</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">s</span><span class="p">.</span><span class="nx">Transact</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">sql</span><span class="p">.</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">res</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">Exec</span><span class="p">(</span><span class="nx">st</span><span class="p">.</span><span class="nx">Query</span><span class="p">,</span> <span class="nx">st</span><span class="p">.</span><span class="nx">Args</span><span class="o">...</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">if</span> <span class="nx">aff</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">res</span><span class="p">.</span><span class="nx">RowsAffected</span><span class="p">();</span> <span class="nx">aff</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;no change during execution&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">err</span>
+</span><span class='line'>  <span class="p">})</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// QWT is query with transaction</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">Store</span><span class="p">)</span> <span class="nx">QWT</span><span class="p">(</span><span class="nx">st</span> <span class="nx">Statement</span><span class="p">,</span> <span class="nx">v</span> <span class="kd">interface</span><span class="p">{})</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">s</span><span class="p">.</span><span class="nx">Transact</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">sql</span><span class="p">.</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">QueryRow</span><span class="p">(</span><span class="nx">st</span><span class="p">.</span><span class="nx">Query</span><span class="p">,</span> <span class="nx">st</span><span class="p">.</span><span class="nx">Args</span><span class="o">...</span><span class="p">).</span><span class="nx">Scan</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">})</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Another important piece is the structure <code>PropertyMap</code> which is of type <code>map[string]interface{}</code>. This is necessary to read and write JSON values back to the database which we will later see in the Model implementation.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="c1">// PropertyMap allows to map and store JSON data with Postgres</span>
+</span><span class='line'><span class="kd">type</span> <span class="nx">PropertyMap</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Value map to a sql driver value</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="nx">PropertyMap</span><span class="p">)</span> <span class="nx">Value</span><span class="p">()</span> <span class="p">(</span><span class="nx">driver</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">j</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nx">Marshal</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">j</span><span class="p">,</span> <span class="nx">err</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Scan map from sql return to a PropertyMap</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">PropertyMap</span><span class="p">)</span> <span class="nx">Scan</span><span class="p">(</span><span class="nx">src</span> <span class="kd">interface</span><span class="p">{})</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">source</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">src</span><span class="p">.([]</span><span class="kt">byte</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;Type assertion .([]byte) failed.&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">i</span> <span class="kd">interface</span><span class="p">{}</span>
+</span><span class='line'>  <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">i</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">err</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">*</span><span class="nx">p</span><span class="p">,</span> <span class="nx">ok</span> <span class="p">=</span> <span class="nx">i</span><span class="p">.(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;Type assertion .(map[string]interface{}) failed.&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="kc">nil</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Migrations</h3>
+
+<p>The migration component allows the application to be portable while also serving a function in testing. It allows the test database to be easily wiped and the schema to be reconfigured. Which helps in making sure the test outcomes are always the same and no previous tests interfere with the returns.</p>
+
+<p>Because the schema needs to be rebuilt in an order, I created a migration method which sorts each level of the map by their keys and then performs the same sorting on the inner map. This way all you need to do to expand upon the migration is to add your SQL statement with the given order of operation it needs.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="c1">// migrations to perform</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">migrations</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// schema commands in the order to be performed</span>
+</span><span class='line'>  <span class="nx">mSCHEMA</span><span class="p">:</span> <span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
+</span><span class='line'>      <span class="mi">0</span><span class="p">:</span> <span class="s">`DROP SCHEMA IF EXISTS app CASCADE`</span><span class="p">,</span>
+</span><span class='line'>      <span class="mi">1</span><span class="p">:</span> <span class="s">`CREATE SCHEMA IF NOT EXISTS app AUTHORIZATION appbot`</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'>  <span class="c1">// type commands in the order to be performed</span>
+</span><span class='line'>  <span class="nx">mTYPE</span><span class="p">:</span> <span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
+</span><span class='line'>      <span class="mi">0</span><span class="p">:</span> <span class="s">`CREATE TYPE app.roles AS ENUM (&#39;user&#39;,&#39;manager&#39;,&#39;admin&#39;)`</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'>  <span class="c1">// table commands in the order to be performed</span>
+</span><span class='line'>  <span class="nx">mTABLE</span><span class="p">:</span> <span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
+</span><span class='line'>      <span class="mi">0</span><span class="p">:</span> <span class="s">`CREATE TABLE IF NOT EXISTS app.users (</span>
+</span><span class='line'><span class="s">                  id SERIAL PRIMARY KEY,</span>
+</span><span class='line'><span class="s">                  first varchar(100) NOT NULL CHECK (first &lt;&gt; &#39;&#39;),</span>
+</span><span class='line'><span class="s">                  last varchar(100) NOT NULL CHECK (last &lt;&gt; &#39;&#39;),</span>
+</span><span class='line'><span class="s">                  role app.roles NOT NULL DEFAULT &#39;user&#39;,</span>
+</span><span class='line'><span class="s">                  api_key char(32) NOT NULL UNIQUE</span>
+</span><span class='line'><span class="s">          )`</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'>  <span class="c1">// index commands in the order to be performed</span>
+</span><span class='line'>  <span class="nx">mINDEX</span><span class="p">:</span> <span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
+</span><span class='line'>      <span class="mi">0</span><span class="p">:</span> <span class="s">`CREATE INDEX role_idx ON app.users (role)`</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Modeling</h3>
+
+<p>All that is left now is to build your models and make sure they implement the <code>CRUD</code> interface. We only have one model for this example but they should all be the same layout just different structures. As each structure should model the table it will be working with. The JSON tags on each element allow us to easily bind data so that it can be used by both the API and database.</p>
+
+<p>Each <code>CRUD</code> pointer receiver method as defined by the interface should return a <code>Statement</code>. This is essentially the <code>query</code> &amp; <code>args</code> parameters of the <code>*sql.DB</code>&rsquo;s <code>Exec()</code> &amp; <code>QueryRow()</code>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">type</span> <span class="p">(</span>
+</span><span class='line'>  <span class="c1">// User models the app.users table</span>
+</span><span class='line'>  <span class="nx">User</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">ID</span>    <span class="kt">int</span>    <span class="s">`json:&quot;id&quot;`</span>
+</span><span class='line'>      <span class="nx">First</span> <span class="kt">string</span> <span class="s">`json:&quot;first&quot;`</span>
+</span><span class='line'>      <span class="nx">Last</span>  <span class="kt">string</span> <span class="s">`json:&quot;last&quot;`</span>
+</span><span class='line'>      <span class="nx">Role</span>  <span class="kt">string</span> <span class="s">`json:&quot;role&quot;`</span>
+</span><span class='line'>      <span class="nx">Key</span>   <span class="kt">string</span> <span class="s">`json:&quot;api_key&quot;`</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Create builds the Statement to insert a user into the database</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">u</span> <span class="o">*</span><span class="nx">User</span><span class="p">)</span> <span class="nx">Create</span><span class="p">()</span> <span class="nx">Statement</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">u</span><span class="p">.</span><span class="nx">GenerateKey</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">u</span><span class="p">.</span><span class="nx">Role</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">u</span><span class="p">.</span><span class="nx">Role</span> <span class="p">=</span> <span class="nx">USER</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">Statement</span><span class="p">{</span>
+</span><span class='line'>      <span class="s">&quot;INSERT INTO app.users (first,last,role,api_key) VALUES ($1,$2,$3,$4)&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">[]</span><span class="kd">interface</span><span class="p">{}{</span><span class="nx">u</span><span class="p">.</span><span class="nx">First</span><span class="p">,</span> <span class="nx">u</span><span class="p">.</span><span class="nx">Last</span><span class="p">,</span> <span class="nx">u</span><span class="p">.</span><span class="nx">Role</span><span class="p">,</span> <span class="nx">u</span><span class="p">.</span><span class="nx">Key</span><span class="p">},</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Read creates the Statement to read a user from the database</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">u</span> <span class="o">*</span><span class="nx">User</span><span class="p">)</span> <span class="nx">Read</span><span class="p">()</span> <span class="nx">Statement</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">Statement</span><span class="p">{</span>
+</span><span class='line'>      <span class="s">&quot;SELECT ROW_TO_JSON(u) FROM (SELECT * FROM app.users WHERE id = $1) AS u&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">[]</span><span class="kd">interface</span><span class="p">{}{</span><span class="nx">u</span><span class="p">.</span><span class="nx">ID</span><span class="p">},</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Update creates the Statement to update a user in the database</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">u</span> <span class="o">*</span><span class="nx">User</span><span class="p">)</span> <span class="nx">Update</span><span class="p">(</span><span class="nx">v</span> <span class="kd">interface</span><span class="p">{})</span> <span class="nx">Statement</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// no merging needed to ignore v</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">Statement</span><span class="p">{</span>
+</span><span class='line'>      <span class="s">&quot;UPDATE app.users SET first = $1,last = $2,role = $3 WHERE id = $4&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">[]</span><span class="kd">interface</span><span class="p">{}{</span><span class="nx">u</span><span class="p">.</span><span class="nx">First</span><span class="p">,</span> <span class="nx">u</span><span class="p">.</span><span class="nx">Last</span><span class="p">,</span> <span class="nx">u</span><span class="p">.</span><span class="nx">Role</span><span class="p">,</span> <span class="nx">u</span><span class="p">.</span><span class="nx">ID</span><span class="p">},</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Delete creates the Statement to delete a user from the database</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">u</span> <span class="o">*</span><span class="nx">User</span><span class="p">)</span> <span class="nx">Delete</span><span class="p">()</span> <span class="nx">Statement</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">Statement</span><span class="p">{</span>
+</span><span class='line'>      <span class="s">&quot;DELETE FROM app.users WHERE id = $1&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">[]</span><span class="kd">interface</span><span class="p">{}{</span><span class="nx">u</span><span class="p">.</span><span class="nx">ID</span><span class="p">},</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[How to Build a RESTful JSON API in Go - Testing Part I]]></title>
