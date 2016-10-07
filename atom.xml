@@ -4,7 +4,7 @@
   <title><![CDATA[thought|pipe]]></title>
   <link href="http://elauqsap.github.io/atom.xml" rel="self"/>
   <link href="http://elauqsap.github.io/"/>
-  <updated>2016-09-30T00:21:45-05:00</updated>
+  <updated>2016-10-06T22:43:20-05:00</updated>
   <id>http://elauqsap.github.io/</id>
   <author>
     <name><![CDATA[elauqsap]]></name>
@@ -12,6 +12,192 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[How to Build a RESTful JSON API in Go - API Part III]]></title>
+    <link href="http://elauqsap.github.io/blog/2016/10/06/how-to-build-a-restful-json-api-in-go-api-part-iii/"/>
+    <updated>2016-10-06T18:03:28-05:00</updated>
+    <id>http://elauqsap.github.io/blog/2016/10/06/how-to-build-a-restful-json-api-in-go-api-part-iii</id>
+    <content type="html"><![CDATA[<p>Concluding our build of a <a href="https://github.com/elauqsap/echo-postgres-json-api">RESTful JSON API with a Postgres database</a>, we will explore the code that binds the backend queries to the HTTP methods. Instead of using the builtin networking tools for HTTP, I decided to use <a href="https://echo.labstack.com/">echo</a>.</p>
+
+<!--more-->
+
+
+<h3>Server</h3>
+
+<p>As we discussed in the previous part of the tutorial, by adding JSON tags we can embed the database configuration. That way we can load both configs from the same file.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">type</span> <span class="p">(</span>
+</span><span class='line'>  <span class="c1">// Config for the server and database</span>
+</span><span class='line'>  <span class="nx">Config</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">Server</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">Bind</span>    <span class="kt">string</span> <span class="s">`json:&quot;bind&quot;`</span>
+</span><span class='line'>          <span class="nx">Cert</span>    <span class="kt">string</span> <span class="s">`json:&quot;cert&quot;`</span>
+</span><span class='line'>          <span class="nx">Key</span>     <span class="kt">string</span> <span class="s">`json:&quot;key&quot;`</span>
+</span><span class='line'>          <span class="nx">LogPath</span> <span class="kt">string</span> <span class="s">`json:&quot;log,omitempty&quot;`</span>
+</span><span class='line'>      <span class="p">}</span> <span class="s">`json:&quot;server&quot;`</span>
+</span><span class='line'>      <span class="nx">Database</span> <span class="nx">database</span><span class="p">.</span><span class="nx">Config</span> <span class="s">`json:&quot;database&quot;`</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>With our configuration file modeled, all we need to do is read it into memory and <code>Unmarshal()</code> the data into the structure. From there we can call the method receivers on both <code>Database{}</code> and <code>Server{}</code> for setup. <code>NewServer()</code> creates an echo instance, binds middleware, and groups routes for the User API. It also calls <code>database.Config.NewStore()</code> which creates and passes back a connection to the database.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="c1">// NewConfig loads the configurations into a structure</span>
+</span><span class='line'><span class="c1">// to be used as a global operator at runtime</span>
+</span><span class='line'><span class="kd">func</span> <span class="nx">NewConfig</span><span class="p">(</span><span class="nx">path</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">conf</span> <span class="o">*</span><span class="nx">Config</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">data</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nx">ReadFile</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">conf</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">nil</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">conf</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// NewServer returns a configured api server instance</span>
+</span><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Config</span><span class="p">)</span> <span class="nx">NewServer</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">echo</span><span class="p">.</span><span class="nx">Echo</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">e</span> <span class="o">:=</span> <span class="nx">echo</span><span class="p">.</span><span class="nx">New</span><span class="p">()</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">logFile</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">os</span><span class="p">.</span><span class="nx">OpenFile</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Server</span><span class="p">.</span><span class="nx">LogPath</span><span class="p">,</span> <span class="nx">os</span><span class="p">.</span><span class="nx">O_WRONLY</span><span class="p">|</span><span class="nx">os</span><span class="p">.</span><span class="nx">O_APPEND</span><span class="p">|</span><span class="nx">os</span><span class="p">.</span><span class="nx">O_CREATE</span><span class="p">,</span> <span class="mo">0660</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">e</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">middleware</span><span class="p">.</span><span class="nx">Logger</span><span class="p">())</span>
+</span><span class='line'>  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">e</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">middleware</span><span class="p">.</span><span class="nx">LoggerWithConfig</span><span class="p">(</span><span class="nx">middleware</span><span class="p">.</span><span class="nx">LoggerConfig</span><span class="p">{</span><span class="nx">Output</span><span class="p">:</span> <span class="nx">logFile</span><span class="p">}))</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nx">e</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">middleware</span><span class="p">.</span><span class="nx">Recover</span><span class="p">())</span>
+</span><span class='line'>  <span class="nx">api</span> <span class="o">:=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">Group</span><span class="p">(</span><span class="s">&quot;/api/v1&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">store</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Database</span><span class="p">.</span><span class="nx">NewStore</span><span class="p">();</span> <span class="nx">err</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">data</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Data</span><span class="p">{</span><span class="nx">store</span><span class="p">}</span>
+</span><span class='line'>      <span class="nx">handlers</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Handlers</span><span class="p">{</span><span class="nx">User</span><span class="p">:</span> <span class="nx">data</span><span class="p">}</span>
+</span><span class='line'>      <span class="nx">api</span><span class="p">.</span><span class="nx">POST</span><span class="p">(</span><span class="s">&quot;/user&quot;</span><span class="p">,</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">User</span><span class="p">.</span><span class="nx">CreateUser</span><span class="p">)</span>
+</span><span class='line'>      <span class="nx">api</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s">&quot;/user&quot;</span><span class="p">,</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">User</span><span class="p">.</span><span class="nx">ReadUser</span><span class="p">)</span>
+</span><span class='line'>      <span class="nx">api</span><span class="p">.</span><span class="nx">PUT</span><span class="p">(</span><span class="s">&quot;/user&quot;</span><span class="p">,</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">User</span><span class="p">.</span><span class="nx">UpdateUser</span><span class="p">)</span>
+</span><span class='line'>      <span class="nx">api</span><span class="p">.</span><span class="nx">DELETE</span><span class="p">(</span><span class="s">&quot;/user&quot;</span><span class="p">,</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">User</span><span class="p">.</span><span class="nx">DeleteUser</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">e</span><span class="p">,</span> <span class="kc">nil</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>User API</h3>
+
+<p>In <code>NewServer()</code> there is a variable called <code>handlers</code> which is where all of the HTTP handlers for the echo routes are defined. <code>Handlers{}</code> are essentially a definition of the CRUD methods and some defined type. They can be used because <code>*database.Store{}</code> is embedded in <code>Data{}</code> and the interface <code>UserCRUD{}</code> is implemented as pointer receiver methods for <code>Data{}</code>. Therefore by initializing <code>Handlers.User</code> with <code>*Data{}</code>, the pointer receiver methods are available to <code>Handlers.User</code> so they can be passed as a handler for the route.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">type</span> <span class="p">(</span>
+</span><span class='line'>  <span class="c1">// Handlers are the HTTP handlers to be used by the API router</span>
+</span><span class='line'>  <span class="nx">Handlers</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">User</span> <span class="nx">UserCRUD</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>All that is left to do from here is implement each CRUD method of the <code>UserCRUD</code> interface. The example below shows how I implemented <code>CreateUser()</code>. Since <code>echo.Context</code> is passed to this pointer method I use an anonymous structure to bind to the <code>POST</code> data. That way I can control which data the user actually gets to define. If binding fails the server sends an <code>400</code> error and returns. If it passes then a <code>database.User</code> is created from the request. Since this is a pointer method with the database embedded in it, all that is left is to pass the <code>database.Query</code> that represents the newly defined <code>database.User</code>. Depending on the transaction response, a success or error message is sent back.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">Data</span><span class="p">)</span> <span class="nx">CreateUser</span><span class="p">(</span><span class="nx">c</span> <span class="nx">echo</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">bind</span> <span class="o">:=</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">First</span> <span class="kt">string</span> <span class="s">`json:&quot;first&quot;`</span>
+</span><span class='line'>      <span class="nx">Last</span>  <span class="kt">string</span> <span class="s">`json:&quot;last&quot;`</span>
+</span><span class='line'>      <span class="nx">Role</span>  <span class="kt">string</span> <span class="s">`json:&quot;role&quot;`</span>
+</span><span class='line'>  <span class="p">}{}</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Bind</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">bind</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">c</span><span class="p">.</span><span class="nx">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusBadRequest</span><span class="p">,</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+</span><span class='line'>          <span class="s">&quot;code&quot;</span><span class="p">:</span>    <span class="mi">1010</span><span class="p">,</span>
+</span><span class='line'>          <span class="s">&quot;message&quot;</span><span class="p">:</span> <span class="s">&quot;invalid user or json format in request body&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">})</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nx">user</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">database</span><span class="p">.</span><span class="nx">User</span><span class="p">{</span><span class="nx">First</span><span class="p">:</span> <span class="nx">bind</span><span class="p">.</span><span class="nx">First</span><span class="p">,</span> <span class="nx">Last</span><span class="p">:</span> <span class="nx">bind</span><span class="p">.</span><span class="nx">Last</span><span class="p">,</span> <span class="nx">Role</span><span class="p">:</span> <span class="nx">bind</span><span class="p">.</span><span class="nx">Role</span><span class="p">}</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">EWT</span><span class="p">(</span><span class="nx">user</span><span class="p">.</span><span class="nx">Create</span><span class="p">());</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">c</span><span class="p">.</span><span class="nx">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusInternalServerError</span><span class="p">,</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+</span><span class='line'>          <span class="s">&quot;code&quot;</span><span class="p">:</span>    <span class="mi">1011</span><span class="p">,</span>
+</span><span class='line'>          <span class="s">&quot;message&quot;</span><span class="p">:</span> <span class="s">&quot;user could not be created&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">})</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">c</span><span class="p">.</span><span class="nx">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+</span><span class='line'>      <span class="s">&quot;code&quot;</span><span class="p">:</span>    <span class="mi">1000</span><span class="p">,</span>
+</span><span class='line'>      <span class="s">&quot;message&quot;</span><span class="p">:</span> <span class="s">&quot;user was successfully created&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">})</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>There are multiple ways to create a RESTful API in golang even though it is an opinionated language. I came from a Ruby on Rails background and I found this structure to be similar.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[How to Build a RESTful JSON API in Go - Database Part II]]></title>
