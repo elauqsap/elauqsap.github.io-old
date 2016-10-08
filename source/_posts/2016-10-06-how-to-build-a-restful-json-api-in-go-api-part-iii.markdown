@@ -9,8 +9,10 @@ Concluding our build of a [RESTful JSON API with a Postgres database](https://gi
 
 <!--more-->
 
-### Server
+### Disclaimer
+A true RESTful service uses HTTP methods coupled with Unified Resource Identifiers to traverse an application. In this example, the input data from the client is also JSON.
 
+### Server
 As we discussed in the previous part of the tutorial, by adding JSON tags we can embed the database configuration. That way we can load both configs from the same file.
 
 ```go
@@ -103,4 +105,4 @@ func (d *Data) CreateUser(c echo.Context) error {
 	})
 }
 ```
-There are multiple ways to create a RESTful API in golang even though it is an opinionated language. I came from a Ruby on Rails background and I found this structure to be similar. 
+There are multiple ways to create a RESTful API in golang even though it is an opinionated language. I came from a Ruby on Rails background and I found this structure to be similar.

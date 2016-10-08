@@ -8,6 +8,9 @@ categories: [Development, Go, Tips & Tricks]
 In my recent endeavor with Go I needed to create a [RESTful JSON API with a Postgres database](https://github.com/elauqsap/echo-postgres-json-api). This blog series outlines what I learned and the methods chosen to implement the API. First up in this blog series demonstrates the implementation of Behavioral Driven Development utilizing [GoConvey](https://github.com/smartystreets/goconvey).
 <!--more-->
 
+### Disclaimer
+A true RESTful service uses HTTP methods coupled with Unified Resource Identifiers to traverse an application. In this example, the input data from the client is also JSON.
+
 ### GoConvey Setup
 There are two primary parts to test within this example and I decided to break them up into "sub-packages". These "sub-packages" include api for handling the RESTful aspects and database for communicating with Postgres instance. Go makes testing very easy by sourcing any file `*_test.go` and running any test functions that start with `Test*`. For both "sub-packages" I created a single Test function and created a general structure to model each test structure.
 

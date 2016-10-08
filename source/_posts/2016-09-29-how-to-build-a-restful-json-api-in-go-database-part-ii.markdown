@@ -9,6 +9,9 @@ In this portion of building a [RESTful JSON API with a Postgres database](https:
 
 <!--more-->
 
+### Disclaimer
+A true RESTful service uses HTTP methods coupled with Unified Resource Identifiers to traverse an application. In this example, the input data from the client is also JSON.
+
 ### Database
 Configuring the connection is important and we need to make sure it can used elsewhere. By exporting `Config` we can embed it in another configuration structure and populate them all at once using JSON tags. Plus by adding a method receiver we can easily return a connection after a configuration file has been parsed.
 
