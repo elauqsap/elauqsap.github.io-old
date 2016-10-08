@@ -87,6 +87,10 @@ in
 <!--more-->
 
 
+<h3>Disclaimer</h3>
+
+<p>A true RESTful service uses HTTP methods coupled with Unified Resource Identifiers to traverse an application. In this example, the input data from the client is also JSON.</p>
+
 <h3>GoConvey Setup</h3>
 
 <p>There are two primary parts to test within this example and I decided to break them up into &ldquo;sub-packages&rdquo;. These &ldquo;sub-packages&rdquo; include api for handling the RESTful aspects and database for communicating with Postgres instance. Go makes testing very easy by sourcing any file <code>*_test.go</code> and running any test functions that start with <code>Test*</code>. For both &ldquo;sub-packages&rdquo; I created a single Test function and created a general structure to model each test structure.</p>
